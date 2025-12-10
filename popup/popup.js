@@ -17,7 +17,7 @@ const elements = {
 };
 
 // 字段列表
-const FIELD_NAMES = ['firstName', 'lastName', 'username', 'email', 'password', 'phone', 'address', 'city', 'zipCode', 'country'];
+const FIELD_NAMES = ['firstName', 'lastName', 'username', 'email', 'password', 'phone', 'address', 'city', 'state', 'zipCode', 'country'];
 
 /**
  * 初始化
@@ -111,6 +111,7 @@ function bindEvents() {
         currentData.email = window.generators.generateEmail(currentData.username);
         currentData.phone = window.generators.generatePhone(newCountry);
         currentData.city = window.generators.generateCity(newCountry);
+        currentData.state = window.generators.generateState(newCountry);
         currentData.zipCode = window.generators.generateZipCode(newCountry);
 
         updateUI();

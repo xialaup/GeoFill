@@ -161,7 +161,27 @@ const COUNTRY_CITIES = {
   'Brazil': ['São Paulo', 'Rio de Janeiro', 'Brasília', 'Salvador', 'Fortaleza', 'Belo Horizonte', 'Manaus', 'Curitiba', 'Recife', 'Porto Alegre'],
   'India': ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Ahmedabad', 'Pune', 'Jaipur', 'Surat'],
   'Italy': ['Rome', 'Milan', 'Naples', 'Turin', 'Palermo', 'Genoa', 'Bologna', 'Florence', 'Venice', 'Verona'],
-  'Netherlands': ['Amsterdam', 'Rotterdam', 'The Hague', 'Utrecht', 'Eindhoven', 'Tilburg', 'Groningen', 'Almere', 'Breda', 'Nijmegen']
+};
+
+// 各国州/省份
+const COUNTRY_STATES = {
+  'United States': ['California', 'Texas', 'Florida', 'New York', 'Illinois', 'Pennsylvania', 'Ohio', 'Georgia', 'Michigan', 'North Carolina'],
+  'United Kingdom': ['England', 'Scotland', 'Wales', 'Northern Ireland', 'Greater London', 'West Midlands', 'Greater Manchester', 'West Yorkshire', 'Kent', 'Essex'],
+  'Canada': ['Ontario', 'Quebec', 'British Columbia', 'Alberta', 'Manitoba', 'Saskatchewan', 'Nova Scotia', 'New Brunswick', 'Newfoundland', 'Prince Edward Island'],
+  'Australia': ['New South Wales', 'Victoria', 'Queensland', 'Western Australia', 'South Australia', 'Tasmania', 'Northern Territory', 'Australian Capital Territory'],
+  'China': ['Beijing', 'Shanghai', 'Guangdong', 'Jiangsu', 'Zhejiang', 'Sichuan', 'Shandong', 'Henan', 'Hubei', 'Hunan'],
+  'Japan': ['Tokyo', 'Osaka', 'Kanagawa', 'Aichi', 'Saitama', 'Chiba', 'Hyogo', 'Hokkaido', 'Fukuoka', 'Kyoto'],
+  'South Korea': ['Seoul', 'Busan', 'Incheon', 'Daegu', 'Daejeon', 'Gwangju', 'Ulsan', 'Gyeonggi', 'Gangwon', 'Jeju'],
+  'Germany': ['Bavaria', 'North Rhine-Westphalia', 'Baden-Württemberg', 'Lower Saxony', 'Hesse', 'Saxony', 'Berlin', 'Hamburg', 'Rhineland-Palatinate', 'Schleswig-Holstein'],
+  'France': ['Île-de-France', 'Provence-Alpes-Côte d\'Azur', 'Auvergne-Rhône-Alpes', 'Occitanie', 'Nouvelle-Aquitaine', 'Hauts-de-France', 'Grand Est', 'Bretagne', 'Normandie', 'Pays de la Loire'],
+  'Russia': ['Moscow', 'Saint Petersburg', 'Moscow Oblast', 'Krasnodar Krai', 'Sverdlovsk Oblast', 'Rostov Oblast', 'Tatarstan', 'Bashkortostan', 'Chelyabinsk Oblast', 'Nizhny Novgorod Oblast'],
+  'Spain': ['Madrid', 'Catalonia', 'Andalusia', 'Valencia', 'Galicia', 'Castile and León', 'Basque Country', 'Canary Islands', 'Castilla-La Mancha', 'Murcia'],
+  'Italy': ['Lombardy', 'Lazio', 'Campania', 'Sicily', 'Veneto', 'Emilia-Romagna', 'Piedmont', 'Puglia', 'Tuscany', 'Calabria'],
+  'Brazil': ['São Paulo', 'Rio de Janeiro', 'Minas Gerais', 'Bahia', 'Paraná', 'Rio Grande do Sul', 'Pernambuco', 'Ceará', 'Santa Catarina', 'Goiás'],
+  'India': ['Maharashtra', 'Uttar Pradesh', 'Tamil Nadu', 'Karnataka', 'Gujarat', 'Rajasthan', 'West Bengal', 'Madhya Pradesh', 'Kerala', 'Andhra Pradesh'],
+  'Singapore': ['Central Region', 'East Region', 'North Region', 'North-East Region', 'West Region'],
+  'Taiwan': ['Taipei', 'New Taipei', 'Taoyuan', 'Taichung', 'Tainan', 'Kaohsiung'],
+  'Hong Kong': ['Hong Kong Island', 'Kowloon', 'New Territories']
 };
 
 /**
@@ -356,6 +376,14 @@ function generateCity(country) {
 }
 
 /**
+ * 生成州/省份
+ */
+function generateState(country) {
+  const states = COUNTRY_STATES[country] || COUNTRY_STATES['United States'];
+  return randomChoice(states);
+}
+
+/**
  * 生成完整的用户信息
  */
 function generateAllInfo(ipData) {
@@ -374,6 +402,7 @@ function generateAllInfo(ipData) {
     phone: generatePhone(country),
     address: generateAddress(),
     city: generateCity(country),
+    state: generateState(country),
     zipCode: generateZipCode(country),
     country
   };
@@ -402,6 +431,8 @@ function regenerateField(fieldName, currentData, ipData) {
       return generateAddress();
     case 'city':
       return generateCity(country);
+    case 'state':
+      return generateState(country);
     case 'zipCode':
       return generateZipCode(country);
     case 'country':
@@ -425,6 +456,7 @@ if (typeof window !== 'undefined') {
     generateAddress,
     generateZipCode,
     generateCity,
+    generateState,
     normalizeCountry,
     setCustomEmailDomain,
     getCustomEmailDomain,

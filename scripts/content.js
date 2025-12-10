@@ -77,6 +77,19 @@ const FIELD_SELECTORS = {
         'input[placeholder*="zip" i]',
         'input[autocomplete="postal-code"]'
     ],
+    state: [
+        'input[name*="state" i]',
+        'input[name*="province" i]',
+        'input[name*="region" i]',
+        'input[id*="state" i]',
+        'input[id*="province" i]',
+        'input[placeholder*="state" i]',
+        'input[placeholder*="province" i]',
+        'select[name*="state" i]',
+        'select[name*="province" i]',
+        'select[id*="state" i]',
+        'input[autocomplete="address-level1"]'
+    ],
     country: [
         'input[name*="country" i]',
         'input[id*="country" i]',
