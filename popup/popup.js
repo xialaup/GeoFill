@@ -21,9 +21,10 @@ const elements = {
 // 字段列表
 const FIELD_NAMES = ['firstName', 'lastName', 'gender', 'birthday', 'username', 'email', 'password', 'phone', 'address', 'city', 'state', 'zipCode', 'country'];
 
-// 存储键名
+// 存储键名和版本（版本变化时清除缓存）
 const STORAGE_KEY = 'geoFillCachedData';
 const THEME_KEY = 'geoFillTheme';
+const CACHE_VERSION = 'v2';  // 更新此版本号可清除旧缓存
 
 /**
  * 显示 toast 提示
@@ -62,6 +63,7 @@ async function saveDataToStorage() {
     try {
         await chrome.storage.local.set({
             [STORAGE_KEY]: {
+                version: CACHE_VERSION,  // 保存版本号
                 currentData,
                 ipData,
                 emailDomain: elements.emailDomainType?.value,
@@ -79,7 +81,16 @@ async function saveDataToStorage() {
 async function loadDataFromStorage() {
     try {
         const result = await chrome.storage.local.get(STORAGE_KEY);
-        return result[STORAGE_KEY] || null;
+        const cached = result[STORAGE_KEY];
+
+        // 检查版本号，版本不匹配则清除缓存
+        if (cached && cached.version !== CACHE_VERSION) {
+            console.log('缓存版本不匹配，清除旧缓存');
+            await chrome.storage.local.remove(STORAGE_KEY);
+            return null;
+        }
+
+        return cached || null;
     } catch (e) {
         console.log('加载数据失败:', e);
         return null;
