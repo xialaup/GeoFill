@@ -792,14 +792,18 @@ function generateGender() {
 }
 
 /**
- * 生成生日（18-60岁之间的随机日期）
+ * 生成生日（18-55岁之间的随机日期，确保年份>=1970）
  */
-function generateBirthday(minAge = 18, maxAge = 60) {
+function generateBirthday(minAge = 18, maxAge = 55) {
   const today = new Date();
   const currentYear = today.getFullYear();
 
+  // 计算年份范围，确保不早于1970年
+  const maxBirthYear = currentYear - minAge;  // 最大年份（最年轻）
+  const minBirthYear = Math.max(1970, currentYear - maxAge);  // 最小年份（最年长），不早于1970
+
   // 随机年份
-  const birthYear = currentYear - minAge - Math.floor(Math.random() * (maxAge - minAge + 1));
+  const birthYear = minBirthYear + Math.floor(Math.random() * (maxBirthYear - minBirthYear + 1));
 
   // 随机月份 (1-12)
   const birthMonth = Math.floor(Math.random() * 12) + 1;
