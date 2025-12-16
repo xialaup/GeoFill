@@ -13,14 +13,47 @@ const elements = {
     regenerateAll: null,
     fillForm: null,
     emailDomainType: null,
-    customDomain: null
+    customDomain: null,
+    themeToggle: null,
+    toast: null
 };
 
 // 字段列表
-const FIELD_NAMES = ['firstName', 'lastName', 'username', 'email', 'password', 'phone', 'address', 'city', 'state', 'zipCode', 'country'];
+const FIELD_NAMES = ['firstName', 'lastName', 'gender', 'birthday', 'username', 'email', 'password', 'phone', 'address', 'city', 'state', 'zipCode', 'country'];
 
 // 存储键名
 const STORAGE_KEY = 'geoFillCachedData';
+const THEME_KEY = 'geoFillTheme';
+
+/**
+ * 显示 toast 提示
+ */
+function showToast(message) {
+    const toast = elements.toast;
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 1500);
+}
+
+/**
+ * 复制到剪贴板
+ */
+async function copyToClipboard(text, btn) {
+    try {
+        await navigator.clipboard.writeText(text);
+        btn.classList.add('copied');
+        btn.textContent = '✓';
+        showToast('已复制到剪贴板');
+        setTimeout(() => {
+            btn.classList.remove('copied');
+            btn.textContent = '📋';
+        }, 1000);
+    } catch (err) {
+        console.error('复制失败:', err);
+    }
+}
 
 /**
  * 保存数据到 chrome.storage
@@ -54,6 +87,42 @@ async function loadDataFromStorage() {
 }
 
 /**
+ * 加载主题设置
+ */
+async function loadTheme() {
+    try {
+        const result = await chrome.storage.local.get(THEME_KEY);
+        const theme = result[THEME_KEY] || 'dark';
+        applyTheme(theme);
+    } catch (e) {
+        console.log('加载主题失败:', e);
+    }
+}
+
+/**
+ * 应用主题
+ */
+function applyTheme(theme) {
+    if (theme === 'light') {
+        document.body.classList.add('light-theme');
+        elements.themeToggle.textContent = '☀️';
+    } else {
+        document.body.classList.remove('light-theme');
+        elements.themeToggle.textContent = '🌙';
+    }
+}
+
+/**
+ * 切换主题
+ */
+async function toggleTheme() {
+    const isLight = document.body.classList.contains('light-theme');
+    const newTheme = isLight ? 'dark' : 'light';
+    applyTheme(newTheme);
+    await chrome.storage.local.set({ [THEME_KEY]: newTheme });
+}
+
+/**
  * 初始化
  */
 document.addEventListener('DOMContentLoaded', async () => {
@@ -64,6 +133,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     elements.ipInfo = document.getElementById('ipInfo');
     elements.regenerateAll = document.getElementById('regenerateAll');
     elements.fillForm = document.getElementById('fillForm');
+    elements.themeToggle = document.getElementById('themeToggle');
+    elements.toast = document.getElementById('toast');
 
     FIELD_NAMES.forEach(name => {
         elements.fields[name] = document.getElementById(name);
@@ -72,6 +143,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 邮箱后缀相关元素
     elements.emailDomainType = document.getElementById('emailDomainType');
     elements.customDomain = document.getElementById('customDomain');
+
+    // 加载主题
+    await loadTheme();
 
     // 绑定事件
     bindEvents();
@@ -130,15 +204,30 @@ function loadGeneratorsScript() {
  * 绑定事件处理器
  */
 function bindEvents() {
+    // 主题切换
+    elements.themeToggle.addEventListener('click', toggleTheme);
+
     // 全部重新生成
     elements.regenerateAll.addEventListener('click', () => {
         currentData = window.generators.generateAllInfo(ipData);
         updateUI();
         saveDataToStorage();
+        showToast('已重新生成所有信息');
     });
 
     // 填写表单
     elements.fillForm.addEventListener('click', fillFormInPage);
+
+    // 复制按钮
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const fieldName = e.currentTarget.dataset.field;
+            const value = currentData[fieldName] || elements.fields[fieldName]?.value;
+            if (value) {
+                copyToClipboard(value, e.currentTarget);
+            }
+        });
+    });
 
     // 单个字段重新生成
     document.querySelectorAll('.refresh-btn').forEach(btn => {
@@ -175,6 +264,11 @@ function bindEvents() {
     FIELD_NAMES.forEach(name => {
         if (elements.fields[name]) {
             elements.fields[name].addEventListener('input', () => {
+                currentData[name] = elements.fields[name].value;
+                saveDataToStorage();
+            });
+            // select 元素使用 change 事件
+            elements.fields[name].addEventListener('change', () => {
                 currentData[name] = elements.fields[name].value;
                 saveDataToStorage();
             });
@@ -320,13 +414,13 @@ async function fetchIPInfo() {
 function updateUI() {
     FIELD_NAMES.forEach(name => {
         if (elements.fields[name] && currentData[name] !== undefined) {
-            if (name === 'country') {
-                // 检查国家是否在下拉列表中
-                const selectEl = elements.fields.country;
+            if (name === 'country' || name === 'gender') {
+                // select 元素
+                const selectEl = elements.fields[name];
                 const options = Array.from(selectEl.options).map(opt => opt.value);
                 if (options.includes(currentData[name])) {
                     selectEl.value = currentData[name];
-                } else {
+                } else if (name === 'country') {
                     // 如果检测到的国家不在列表中，使用第一个选项（美国）
                     selectEl.selectedIndex = 0;
                     currentData[name] = selectEl.value;

@@ -785,11 +785,43 @@ function generateState(country) {
 }
 
 /**
+ * 生成性别
+ */
+function generateGender() {
+  return Math.random() > 0.5 ? 'male' : 'female';
+}
+
+/**
+ * 生成生日（18-60岁之间的随机日期）
+ */
+function generateBirthday(minAge = 18, maxAge = 60) {
+  const today = new Date();
+  const currentYear = today.getFullYear();
+
+  // 随机年份
+  const birthYear = currentYear - minAge - Math.floor(Math.random() * (maxAge - minAge + 1));
+
+  // 随机月份 (1-12)
+  const birthMonth = Math.floor(Math.random() * 12) + 1;
+
+  // 根据月份确定天数
+  const daysInMonth = new Date(birthYear, birthMonth, 0).getDate();
+  const birthDay = Math.floor(Math.random() * daysInMonth) + 1;
+
+  // 格式化为 YYYY-MM-DD
+  const month = birthMonth.toString().padStart(2, '0');
+  const day = birthDay.toString().padStart(2, '0');
+
+  return `${birthYear}-${month}-${day}`;
+}
+
+/**
  * 生成完整的用户信息
  */
 function generateAllInfo(ipData) {
   const country = ipData.country || 'United States';
 
+  const gender = generateGender();
   const firstName = generateFirstName(country);
   const lastName = generateLastName(country);
   const username = generateUsername(firstName, lastName);
@@ -800,6 +832,8 @@ function generateAllInfo(ipData) {
   return {
     firstName,
     lastName,
+    gender,
+    birthday: generateBirthday(),
     username,
     email: generateEmail(username),
     password: generatePassword(),
@@ -823,6 +857,10 @@ function regenerateField(fieldName, currentData, ipData) {
       return generateFirstName(country);
     case 'lastName':
       return generateLastName(country);
+    case 'gender':
+      return generateGender();
+    case 'birthday':
+      return generateBirthday();
     case 'username':
       return generateUsername(currentData.firstName, currentData.lastName);
     case 'email':
@@ -867,6 +905,8 @@ if (typeof window !== 'undefined') {
     regenerateField,
     generateFirstName,
     generateLastName,
+    generateGender,
+    generateBirthday,
     generateUsername,
     generateEmail,
     generatePassword,

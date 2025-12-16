@@ -21,6 +21,22 @@ const FIELD_SELECTORS = {
         'input[autocomplete="family-name"]',
         'input[name*="family" i]'
     ],
+    gender: [
+        'select[name*="gender" i]',
+        'select[id*="gender" i]',
+        'select[name*="sex" i]',
+        'input[name*="gender" i]',
+        'input[id*="gender" i]'
+    ],
+    birthday: [
+        'input[type="date"]',
+        'input[name*="birth" i]',
+        'input[name*="dob" i]',
+        'input[id*="birth" i]',
+        'input[id*="dob" i]',
+        'input[placeholder*="birth" i]',
+        'input[autocomplete="bday"]'
+    ],
     username: [
         'input[name*="user" i]',
         'input[name*="login" i]',
