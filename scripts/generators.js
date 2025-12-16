@@ -706,45 +706,44 @@ function selectLocation(country) {
 }
 
 /**
- * 根据城市名称匹配位置（优先使用 IP 检测到的城市）
+ * 根据 IP 检测的城市和州设置位置（直接使用 IP 返回的信息）
  */
 function selectLocationByCity(country, cityName, regionName) {
   const locations = CITY_STATE_MAP[country] || CITY_STATE_MAP['United States'];
 
+  // 如果 IP 返回了城市信息，直接使用
   if (cityName && cityName !== 'Unknown') {
-    // 尝试精确匹配城市名
+    // 尝试在数据库中查找邮编前缀
+    let zipPrefix = '';
+
+    // 精确匹配城市获取邮编
     const exactMatch = locations.find(loc =>
       loc.city.toLowerCase() === cityName.toLowerCase()
     );
     if (exactMatch) {
-      currentLocation = exactMatch;
-      return currentLocation;
+      zipPrefix = exactMatch.zip;
+    } else if (regionName) {
+      // 匹配同州城市获取邮编
+      const stateMatch = locations.find(loc =>
+        loc.state.toLowerCase() === regionName.toLowerCase() ||
+        loc.state.toLowerCase().includes(regionName.toLowerCase())
+      );
+      if (stateMatch) {
+        zipPrefix = stateMatch.zip;
+      }
     }
 
-    // 尝试模糊匹配城市名
-    const fuzzyMatch = locations.find(loc =>
-      loc.city.toLowerCase().includes(cityName.toLowerCase()) ||
-      cityName.toLowerCase().includes(loc.city.toLowerCase())
-    );
-    if (fuzzyMatch) {
-      currentLocation = fuzzyMatch;
-      return currentLocation;
-    }
+    // 直接使用 IP 返回的城市和州
+    currentLocation = {
+      city: cityName,
+      state: regionName || '',
+      zip: zipPrefix
+    };
+
+    return currentLocation;
   }
 
-  // 如果有州/地区信息，尝试匹配同州的城市
-  if (regionName) {
-    const regionMatch = locations.find(loc =>
-      loc.state.toLowerCase() === regionName.toLowerCase() ||
-      loc.state.toLowerCase().includes(regionName.toLowerCase())
-    );
-    if (regionMatch) {
-      currentLocation = regionMatch;
-      return currentLocation;
-    }
-  }
-
-  // 没有匹配到，随机选择
+  // 没有 IP 城市信息，随机选择
   return selectLocation(country);
 }
 
