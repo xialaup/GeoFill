@@ -147,10 +147,25 @@ function bindEvents() {
             // 先从输入框更新 currentData
             updateCurrentDataFromInputs();
             // 重新生成该字段
-            currentData[fieldName] = window.generators.regenerateField(fieldName, currentData, ipData);
-            // 更新显示
-            if (elements.fields[fieldName]) {
-                elements.fields[fieldName].value = currentData[fieldName];
+            const result = window.generators.regenerateField(fieldName, currentData, ipData);
+
+            // 检查是否是位置更新（城市/州刷新会返回关联对象）
+            if (result && result._isLocationUpdate) {
+                // 更新城市、州、邮编
+                currentData.city = result.city;
+                currentData.state = result.state;
+                currentData.zipCode = result.zipCode;
+
+                // 更新所有相关字段的显示
+                if (elements.fields.city) elements.fields.city.value = result.city;
+                if (elements.fields.state) elements.fields.state.value = result.state;
+                if (elements.fields.zipCode) elements.fields.zipCode.value = result.zipCode;
+            } else {
+                currentData[fieldName] = result;
+                // 更新显示
+                if (elements.fields[fieldName]) {
+                    elements.fields[fieldName].value = currentData[fieldName];
+                }
             }
             saveDataToStorage();
         });
@@ -170,17 +185,9 @@ function bindEvents() {
     elements.fields.country.addEventListener('change', () => {
         const newCountry = elements.fields.country.value;
         ipData.country = newCountry;
-        currentData.country = newCountry;
 
-        // 重新生成基于国家的信息
-        currentData.firstName = window.generators.generateFirstName(newCountry);
-        currentData.lastName = window.generators.generateLastName(newCountry);
-        currentData.username = window.generators.generateUsername(currentData.firstName, currentData.lastName);
-        currentData.email = window.generators.generateEmail(currentData.username);
-        currentData.phone = window.generators.generatePhone(newCountry);
-        currentData.city = window.generators.generateCity(newCountry);
-        currentData.state = window.generators.generateState(newCountry);
-        currentData.zipCode = window.generators.generateZipCode(newCountry);
+        // 使用 generateAllInfo 重新生成所有信息，确保地址关联正确
+        currentData = window.generators.generateAllInfo(ipData);
 
         updateUI();
         saveDataToStorage();

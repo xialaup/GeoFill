@@ -74,13 +74,141 @@ const COUNTRY_LANG_MAP = {
   'Spain': 'es', 'Mexico': 'es', 'Argentina': 'es', 'Colombia': 'es', 'Peru': 'es', 'Chile': 'es'
 };
 
-// 国家电话区号
-const COUNTRY_PHONE_CODES = {
-  'United States': '+1', 'United Kingdom': '+44', 'Canada': '+1', 'Australia': '+61',
-  'China': '+86', 'Taiwan': '+886', 'Hong Kong': '+852', 'Japan': '+81',
-  'South Korea': '+82', 'Germany': '+49', 'France': '+33', 'Russia': '+7',
-  'Spain': '+34', 'Mexico': '+52', 'Brazil': '+55', 'India': '+91',
-  'Italy': '+39', 'Netherlands': '+31', 'Singapore': '+65'
+// 各国电话号码格式配置
+const PHONE_FORMATS = {
+  'United States': {
+    code: '+1',
+    length: 10,
+    // 美国区号第一位是2-9，第二位0-8，手机号格式: (xxx) xxx-xxxx
+    areaCodePrefixes: ['201', '202', '212', '213', '214', '215', '216', '217', '234', '248', '253', '267', '281', '301', '302', '303', '305', '310', '312', '313', '314', '315', '323', '347', '352', '386', '404', '407', '408', '410', '412', '415', '424', '425', '469', '470', '480', '484', '503', '504', '505', '508', '509', '510', '512', '513', '516', '518', '520', '530', '540', '551', '559', '562', '571', '573', '585', '602', '603', '609', '610', '612', '614', '615', '616', '617', '619', '626', '630', '631', '646', '650', '657', '661', '678', '702', '703', '704', '708', '713', '714', '716', '718', '720', '724', '727', '732', '734', '737', '747', '754', '757', '760', '762', '770', '773', '774', '781', '786', '801', '802', '804', '805', '810', '813', '814', '816', '817', '818', '828', '831', '832', '845', '847', '848', '856', '857', '858', '859', '860', '862', '863', '864', '865', '909', '910', '916', '917', '918', '919', '920', '925', '929', '936', '937', '940', '941', '949', '951', '952', '954', '956', '970', '971', '972', '973', '978', '979', '980'],
+    format: (num) => `(${num.slice(0, 3)}) ${num.slice(3, 6)}-${num.slice(6)}`
+  },
+  'Canada': {
+    code: '+1',
+    length: 10,
+    areaCodePrefixes: ['204', '226', '236', '249', '250', '289', '306', '343', '365', '403', '416', '418', '431', '437', '438', '450', '506', '514', '519', '548', '579', '581', '587', '604', '613', '639', '647', '705', '709', '778', '780', '782', '807', '819', '825', '867', '873', '902', '905'],
+    format: (num) => `(${num.slice(0, 3)}) ${num.slice(3, 6)}-${num.slice(6)}`
+  },
+  'United Kingdom': {
+    code: '+44',
+    length: 10,
+    // 英国手机号以7开头，格式: 7xxx xxx xxx
+    mobilePrefixes: ['71', '72', '73', '74', '75', '76', '77', '78', '79'],
+    format: (num) => `${num.slice(0, 4)} ${num.slice(4, 7)} ${num.slice(7)}`
+  },
+  'China': {
+    code: '+86',
+    length: 11,
+    // 中国手机号以1开头，第二位3-9，格式: 1xx xxxx xxxx
+    mobilePrefixes: ['130', '131', '132', '133', '134', '135', '136', '137', '138', '139', '150', '151', '152', '153', '155', '156', '157', '158', '159', '166', '170', '171', '172', '173', '175', '176', '177', '178', '180', '181', '182', '183', '184', '185', '186', '187', '188', '189', '191', '198', '199'],
+    format: (num) => `${num.slice(0, 3)} ${num.slice(3, 7)} ${num.slice(7)}`
+  },
+  'Japan': {
+    code: '+81',
+    length: 10,
+    // 日本手机号以70/80/90开头，格式: xx-xxxx-xxxx
+    mobilePrefixes: ['70', '80', '90'],
+    format: (num) => `${num.slice(0, 2)}-${num.slice(2, 6)}-${num.slice(6)}`
+  },
+  'South Korea': {
+    code: '+82',
+    length: 10,
+    // 韩国手机号以010开头（去掉区号后变成10），格式: 10-xxxx-xxxx
+    mobilePrefixes: ['10'],
+    format: (num) => `${num.slice(0, 2)}-${num.slice(2, 6)}-${num.slice(6)}`
+  },
+  'Germany': {
+    code: '+49',
+    length: 11,
+    // 德国手机号以15/16/17开头，格式: 1xx xxxxxxx
+    mobilePrefixes: ['151', '152', '155', '157', '159', '160', '162', '163', '170', '171', '172', '173', '174', '175', '176', '177', '178', '179'],
+    format: (num) => `${num.slice(0, 3)} ${num.slice(3, 7)} ${num.slice(7)}`
+  },
+  'France': {
+    code: '+33',
+    length: 9,
+    // 法国手机号以6或7开头，格式: 6 xx xx xx xx
+    mobilePrefixes: ['6', '7'],
+    format: (num) => `${num.slice(0, 1)} ${num.slice(1, 3)} ${num.slice(3, 5)} ${num.slice(5, 7)} ${num.slice(7)}`
+  },
+  'Italy': {
+    code: '+39',
+    length: 10,
+    // 意大利手机号以3开头，格式: 3xx xxx xxxx
+    mobilePrefixes: ['320', '322', '323', '327', '328', '329', '330', '331', '333', '334', '335', '336', '337', '338', '339', '340', '342', '345', '346', '347', '348', '349', '350', '360', '366', '368', '370', '377', '380', '388', '389', '391', '392', '393'],
+    format: (num) => `${num.slice(0, 3)} ${num.slice(3, 6)} ${num.slice(6)}`
+  },
+  'Spain': {
+    code: '+34',
+    length: 9,
+    // 西班牙手机号以6或7开头，格式: 6xx xxx xxx
+    mobilePrefixes: ['6', '7'],
+    format: (num) => `${num.slice(0, 3)} ${num.slice(3, 6)} ${num.slice(6)}`
+  },
+  'Russia': {
+    code: '+7',
+    length: 10,
+    // 俄罗斯手机号以9开头，格式: 9xx xxx xx xx
+    mobilePrefixes: ['900', '901', '902', '903', '904', '905', '906', '908', '909', '910', '911', '912', '913', '914', '915', '916', '917', '918', '919', '920', '921', '922', '923', '924', '925', '926', '927', '928', '929', '930', '931', '932', '933', '934', '936', '937', '938', '939', '950', '951', '952', '953', '958', '960', '961', '962', '963', '964', '965', '966', '967', '968', '969', '977', '978', '980', '981', '982', '983', '984', '985', '986', '987', '988', '989', '991', '992', '993', '994', '995', '996', '997', '999'],
+    format: (num) => `${num.slice(0, 3)} ${num.slice(3, 6)}-${num.slice(6, 8)}-${num.slice(8)}`
+  },
+  'Brazil': {
+    code: '+55',
+    length: 11,
+    // 巴西手机号格式: (xx) 9xxxx-xxxx，手机号第一位是9
+    areaCodePrefixes: ['11', '12', '13', '14', '15', '16', '17', '18', '19', '21', '22', '24', '27', '28', '31', '32', '33', '34', '35', '37', '38', '41', '42', '43', '44', '45', '46', '47', '48', '49', '51', '53', '54', '55', '61', '62', '63', '64', '65', '66', '67', '68', '69', '71', '73', '74', '75', '77', '79', '81', '82', '83', '84', '85', '86', '87', '88', '89', '91', '92', '93', '94', '95', '96', '97', '98', '99'],
+    mobileFirstDigit: '9',
+    format: (num) => `(${num.slice(0, 2)}) ${num.slice(2, 7)}-${num.slice(7)}`
+  },
+  'India': {
+    code: '+91',
+    length: 10,
+    // 印度手机号以6-9开头，格式: xxxxx xxxxx
+    mobilePrefixes: ['6', '7', '8', '9'],
+    format: (num) => `${num.slice(0, 5)} ${num.slice(5)}`
+  },
+  'Australia': {
+    code: '+61',
+    length: 9,
+    // 澳大利亚手机号以4开头，格式: 4xx xxx xxx
+    mobilePrefixes: ['4'],
+    format: (num) => `${num.slice(0, 3)} ${num.slice(3, 6)} ${num.slice(6)}`
+  },
+  'Mexico': {
+    code: '+52',
+    length: 10,
+    // 墨西哥手机号，格式: xxx xxx xxxx
+    areaCodePrefixes: ['33', '55', '81', '222', '229', '33', '442', '444', '449', '462', '477', '492', '551', '552', '553', '554', '555', '556', '557', '558', '614', '618', '624', '627', '656', '667', '686', '722', '744', '747', '753', '777', '818', '833', '844', '861', '862', '867', '871', '899', '921', '951', '961', '981', '984', '998', '999'],
+    format: (num) => `${num.slice(0, 3)} ${num.slice(3, 6)} ${num.slice(6)}`
+  },
+  'Singapore': {
+    code: '+65',
+    length: 8,
+    // 新加坡手机号以8或9开头，格式: xxxx xxxx
+    mobilePrefixes: ['8', '9'],
+    format: (num) => `${num.slice(0, 4)} ${num.slice(4)}`
+  },
+  'Hong Kong': {
+    code: '+852',
+    length: 8,
+    // 香港手机号以5/6/9开头，格式: xxxx xxxx
+    mobilePrefixes: ['5', '6', '9'],
+    format: (num) => `${num.slice(0, 4)} ${num.slice(4)}`
+  },
+  'Taiwan': {
+    code: '+886',
+    length: 9,
+    // 台湾手机号以9开头，格式: 9xx xxx xxx
+    mobilePrefixes: ['9'],
+    format: (num) => `${num.slice(0, 3)} ${num.slice(3, 6)} ${num.slice(6)}`
+  },
+  'Netherlands': {
+    code: '+31',
+    length: 9,
+    // 荷兰手机号以6开头，格式: 6 xx xx xx xx
+    mobilePrefixes: ['6'],
+    format: (num) => `${num.slice(0, 1)} ${num.slice(1, 3)} ${num.slice(3, 5)} ${num.slice(5, 7)} ${num.slice(7)}`
+  }
 };
 
 // 常见邮箱域名（分类）
@@ -129,60 +257,241 @@ const COUNTRY_ALIASES = {
   'Holland': 'Netherlands'
 };
 
-// 街道名称
-const STREET_NAMES = ['Main St', 'Oak Ave', 'Park Rd', 'Cedar Ln', 'Maple Dr', 'Pine St', 'Elm Ave', 'Washington Blvd',
-  'Lake View Dr', 'Sunset Blvd', 'River Rd', 'Forest Ave', 'Hill St', 'Valley Rd', 'Spring Ln'];
-
-// 各国主要城市
-const COUNTRY_CITIES = {
-  'United States': ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose'],
-  'United Kingdom': ['London', 'Birmingham', 'Manchester', 'Glasgow', 'Liverpool', 'Leeds', 'Sheffield', 'Edinburgh', 'Bristol', 'Leicester'],
-  'Canada': ['Toronto', 'Montreal', 'Vancouver', 'Calgary', 'Edmonton', 'Ottawa', 'Winnipeg', 'Quebec City', 'Hamilton', 'Kitchener'],
-  'Australia': ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide', 'Gold Coast', 'Canberra', 'Newcastle', 'Wollongong', 'Hobart'],
-  'New Zealand': ['Auckland', 'Wellington', 'Christchurch', 'Hamilton', 'Tauranga', 'Dunedin', 'Palmerston North', 'Napier', 'Nelson', 'Rotorua'],
-  'China': ['Beijing', 'Shanghai', 'Guangzhou', 'Shenzhen', 'Chengdu', 'Hangzhou', 'Wuhan', 'Xian', 'Nanjing', 'Chongqing'],
-  'Taiwan': ['Taipei', 'Kaohsiung', 'Taichung', 'Tainan', 'Hsinchu', 'Keelung', 'Taoyuan', 'Changhua', 'Pingtung', 'Yilan'],
-  'Hong Kong': ['Central', 'Kowloon', 'Tsim Sha Tsui', 'Mong Kok', 'Causeway Bay', 'Wan Chai', 'Sha Tin', 'Tuen Mun', 'Yuen Long', 'Tai Po'],
-  'Singapore': ['Singapore', 'Jurong East', 'Tampines', 'Woodlands', 'Bedok', 'Ang Mo Kio', 'Clementi', 'Bishan', 'Toa Payoh', 'Serangoon'],
-  'Japan': ['Tokyo', 'Osaka', 'Yokohama', 'Nagoya', 'Sapporo', 'Fukuoka', 'Kobe', 'Kyoto', 'Kawasaki', 'Sendai'],
-  'South Korea': ['Seoul', 'Busan', 'Incheon', 'Daegu', 'Daejeon', 'Gwangju', 'Suwon', 'Ulsan', 'Changwon', 'Seongnam'],
-  'Germany': ['Berlin', 'Hamburg', 'Munich', 'Cologne', 'Frankfurt', 'Stuttgart', 'Düsseldorf', 'Leipzig', 'Dortmund', 'Essen'],
-  'Austria': ['Vienna', 'Graz', 'Linz', 'Salzburg', 'Innsbruck', 'Klagenfurt', 'Villach', 'Wels', 'St. Pölten', 'Dornbirn'],
-  'Switzerland': ['Zurich', 'Geneva', 'Basel', 'Lausanne', 'Bern', 'Winterthur', 'Lucerne', 'St. Gallen', 'Lugano', 'Biel'],
-  'France': ['Paris', 'Marseille', 'Lyon', 'Toulouse', 'Nice', 'Nantes', 'Strasbourg', 'Montpellier', 'Bordeaux', 'Lille'],
-  'Belgium': ['Brussels', 'Antwerp', 'Ghent', 'Charleroi', 'Liège', 'Bruges', 'Namur', 'Leuven', 'Mons', 'Mechelen'],
-  'Russia': ['Moscow', 'Saint Petersburg', 'Novosibirsk', 'Yekaterinburg', 'Kazan', 'Nizhny Novgorod', 'Chelyabinsk', 'Samara', 'Omsk', 'Rostov-on-Don'],
-  'Spain': ['Madrid', 'Barcelona', 'Valencia', 'Seville', 'Zaragoza', 'Málaga', 'Murcia', 'Palma', 'Las Palmas', 'Bilbao'],
-  'Mexico': ['Mexico City', 'Guadalajara', 'Monterrey', 'Puebla', 'Tijuana', 'León', 'Juárez', 'Zapopan', 'Mérida', 'Cancún'],
-  'Argentina': ['Buenos Aires', 'Córdoba', 'Rosario', 'Mendoza', 'La Plata', 'Tucumán', 'Mar del Plata', 'Salta', 'Santa Fe', 'Neuquén'],
-  'Colombia': ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena', 'Cúcuta', 'Bucaramanga', 'Pereira', 'Santa Marta', 'Ibagué'],
-  'Peru': ['Lima', 'Arequipa', 'Trujillo', 'Chiclayo', 'Piura', 'Iquitos', 'Cusco', 'Huancayo', 'Tacna', 'Pucallpa'],
-  'Chile': ['Santiago', 'Valparaíso', 'Concepción', 'La Serena', 'Antofagasta', 'Temuco', 'Rancagua', 'Talca', 'Arica', 'Iquique'],
-  'Brazil': ['São Paulo', 'Rio de Janeiro', 'Brasília', 'Salvador', 'Fortaleza', 'Belo Horizonte', 'Manaus', 'Curitiba', 'Recife', 'Porto Alegre'],
-  'India': ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Ahmedabad', 'Pune', 'Jaipur', 'Surat'],
-  'Italy': ['Rome', 'Milan', 'Naples', 'Turin', 'Palermo', 'Genoa', 'Bologna', 'Florence', 'Venice', 'Verona'],
+// 街道名称 - 扩展更多真实街道类型
+const STREET_NAMES = {
+  'United States': ['Main St', 'Oak Ave', 'Park Rd', 'Cedar Ln', 'Maple Dr', 'Pine St', 'Elm Ave', 'Washington Blvd',
+    'Broadway', 'Market St', 'Highland Ave', 'Lake St', 'Walnut St', 'Chestnut St', 'Spring St', 'Center St',
+    'Church St', 'Madison Ave', 'Jefferson Blvd', 'Lincoln Way', 'Franklin St', 'Union St', 'Liberty Ave'],
+  'United Kingdom': ['High St', 'Church Rd', 'Station Rd', 'Victoria Rd', 'Manor Rd', 'Park Lane', 'Mill Lane',
+    'Queen St', 'King St', 'London Rd', 'Bridge St', 'Green Lane', 'North St', 'South St', 'West St', 'East St'],
+  'Canada': ['Main St', 'King St', 'Queen St', 'Yonge St', 'Dundas St', 'Bloor St', 'College St', 'Bay St',
+    'Avenue Rd', 'Rue Sainte-Catherine', 'Boulevard Saint-Laurent', 'Rue Sherbrooke'],
+  'Australia': ['George St', 'Elizabeth St', 'Collins St', 'Bourke St', 'Flinders St', 'King St', 'Queen St',
+    'William St', 'Victoria St', 'Albert St', 'Edward St', 'Adelaide St'],
+  'China': ['Nanjing Road', 'Chang\'an Street', 'Wangfujing Street', 'Huaihai Road', 'Beijing Road',
+    'Zhongshan Road', 'Jiefang Road', 'Renmin Road', 'Xingfu Road', 'Heping Road'],
+  'Japan': ['Ginza', 'Omotesando', 'Shibuya', 'Shinjuku', 'Harajuku', 'Akihabara', 'Aoyama', 'Roppongi'],
+  'Germany': ['Hauptstraße', 'Bahnhofstraße', 'Schulstraße', 'Gartenstraße', 'Dorfstraße', 'Kirchstraße',
+    'Berliner Straße', 'Münchner Straße', 'Frankfurter Allee'],
+  'France': ['Rue de la Paix', 'Avenue des Champs-Élysées', 'Boulevard Saint-Germain', 'Rue de Rivoli',
+    'Boulevard Haussmann', 'Rue du Faubourg Saint-Honoré', 'Avenue Montaigne'],
+  'default': ['Main St', 'Central Ave', 'Park Rd', 'First St', 'Second Ave', 'Third St', 'North Rd', 'South Blvd']
 };
 
-// 各国州/省份
-const COUNTRY_STATES = {
-  'United States': ['California', 'Texas', 'Florida', 'New York', 'Illinois', 'Pennsylvania', 'Ohio', 'Georgia', 'Michigan', 'North Carolina'],
-  'United Kingdom': ['England', 'Scotland', 'Wales', 'Northern Ireland', 'Greater London', 'West Midlands', 'Greater Manchester', 'West Yorkshire', 'Kent', 'Essex'],
-  'Canada': ['Ontario', 'Quebec', 'British Columbia', 'Alberta', 'Manitoba', 'Saskatchewan', 'Nova Scotia', 'New Brunswick', 'Newfoundland', 'Prince Edward Island'],
-  'Australia': ['New South Wales', 'Victoria', 'Queensland', 'Western Australia', 'South Australia', 'Tasmania', 'Northern Territory', 'Australian Capital Territory'],
-  'China': ['Beijing', 'Shanghai', 'Guangdong', 'Jiangsu', 'Zhejiang', 'Sichuan', 'Shandong', 'Henan', 'Hubei', 'Hunan'],
-  'Japan': ['Tokyo', 'Osaka', 'Kanagawa', 'Aichi', 'Saitama', 'Chiba', 'Hyogo', 'Hokkaido', 'Fukuoka', 'Kyoto'],
-  'South Korea': ['Seoul', 'Busan', 'Incheon', 'Daegu', 'Daejeon', 'Gwangju', 'Ulsan', 'Gyeonggi', 'Gangwon', 'Jeju'],
-  'Germany': ['Bavaria', 'North Rhine-Westphalia', 'Baden-Württemberg', 'Lower Saxony', 'Hesse', 'Saxony', 'Berlin', 'Hamburg', 'Rhineland-Palatinate', 'Schleswig-Holstein'],
-  'France': ['Île-de-France', 'Provence-Alpes-Côte d\'Azur', 'Auvergne-Rhône-Alpes', 'Occitanie', 'Nouvelle-Aquitaine', 'Hauts-de-France', 'Grand Est', 'Bretagne', 'Normandie', 'Pays de la Loire'],
-  'Russia': ['Moscow', 'Saint Petersburg', 'Moscow Oblast', 'Krasnodar Krai', 'Sverdlovsk Oblast', 'Rostov Oblast', 'Tatarstan', 'Bashkortostan', 'Chelyabinsk Oblast', 'Nizhny Novgorod Oblast'],
-  'Spain': ['Madrid', 'Catalonia', 'Andalusia', 'Valencia', 'Galicia', 'Castile and León', 'Basque Country', 'Canary Islands', 'Castilla-La Mancha', 'Murcia'],
-  'Italy': ['Lombardy', 'Lazio', 'Campania', 'Sicily', 'Veneto', 'Emilia-Romagna', 'Piedmont', 'Puglia', 'Tuscany', 'Calabria'],
-  'Brazil': ['São Paulo', 'Rio de Janeiro', 'Minas Gerais', 'Bahia', 'Paraná', 'Rio Grande do Sul', 'Pernambuco', 'Ceará', 'Santa Catarina', 'Goiás'],
-  'India': ['Maharashtra', 'Uttar Pradesh', 'Tamil Nadu', 'Karnataka', 'Gujarat', 'Rajasthan', 'West Bengal', 'Madhya Pradesh', 'Kerala', 'Andhra Pradesh'],
-  'Singapore': ['Central Region', 'East Region', 'North Region', 'North-East Region', 'West Region'],
-  'Taiwan': ['Taipei', 'New Taipei', 'Taoyuan', 'Taichung', 'Tainan', 'Kaohsiung'],
-  'Hong Kong': ['Hong Kong Island', 'Kowloon', 'New Territories']
+// 城市-州/省关联数据（真实对应关系）
+const CITY_STATE_MAP = {
+  'United States': [
+    { city: 'New York', state: 'New York', zip: '100' },
+    { city: 'Los Angeles', state: 'California', zip: '900' },
+    { city: 'Chicago', state: 'Illinois', zip: '606' },
+    { city: 'Houston', state: 'Texas', zip: '770' },
+    { city: 'Phoenix', state: 'Arizona', zip: '850' },
+    { city: 'Philadelphia', state: 'Pennsylvania', zip: '191' },
+    { city: 'San Antonio', state: 'Texas', zip: '782' },
+    { city: 'San Diego', state: 'California', zip: '921' },
+    { city: 'Dallas', state: 'Texas', zip: '752' },
+    { city: 'San Jose', state: 'California', zip: '951' },
+    { city: 'Austin', state: 'Texas', zip: '787' },
+    { city: 'Seattle', state: 'Washington', zip: '981' },
+    { city: 'Denver', state: 'Colorado', zip: '802' },
+    { city: 'Boston', state: 'Massachusetts', zip: '021' },
+    { city: 'Miami', state: 'Florida', zip: '331' },
+    { city: 'Atlanta', state: 'Georgia', zip: '303' },
+    { city: 'Las Vegas', state: 'Nevada', zip: '891' },
+    { city: 'Portland', state: 'Oregon', zip: '972' },
+    { city: 'Detroit', state: 'Michigan', zip: '482' },
+    { city: 'Minneapolis', state: 'Minnesota', zip: '554' }
+  ],
+  'United Kingdom': [
+    { city: 'London', state: 'Greater London', zip: 'W1' },
+    { city: 'Birmingham', state: 'West Midlands', zip: 'B1' },
+    { city: 'Manchester', state: 'Greater Manchester', zip: 'M1' },
+    { city: 'Glasgow', state: 'Scotland', zip: 'G1' },
+    { city: 'Liverpool', state: 'Merseyside', zip: 'L1' },
+    { city: 'Leeds', state: 'West Yorkshire', zip: 'LS1' },
+    { city: 'Sheffield', state: 'South Yorkshire', zip: 'S1' },
+    { city: 'Edinburgh', state: 'Scotland', zip: 'EH1' },
+    { city: 'Bristol', state: 'South West England', zip: 'BS1' },
+    { city: 'Leicester', state: 'East Midlands', zip: 'LE1' },
+    { city: 'Newcastle', state: 'Tyne and Wear', zip: 'NE1' },
+    { city: 'Nottingham', state: 'East Midlands', zip: 'NG1' }
+  ],
+  'Canada': [
+    { city: 'Toronto', state: 'Ontario', zip: 'M5' },
+    { city: 'Montreal', state: 'Quebec', zip: 'H2' },
+    { city: 'Vancouver', state: 'British Columbia', zip: 'V6' },
+    { city: 'Calgary', state: 'Alberta', zip: 'T2' },
+    { city: 'Edmonton', state: 'Alberta', zip: 'T5' },
+    { city: 'Ottawa', state: 'Ontario', zip: 'K1' },
+    { city: 'Winnipeg', state: 'Manitoba', zip: 'R3' },
+    { city: 'Quebec City', state: 'Quebec', zip: 'G1' },
+    { city: 'Hamilton', state: 'Ontario', zip: 'L8' },
+    { city: 'Victoria', state: 'British Columbia', zip: 'V8' }
+  ],
+  'Australia': [
+    { city: 'Sydney', state: 'New South Wales', zip: '2000' },
+    { city: 'Melbourne', state: 'Victoria', zip: '3000' },
+    { city: 'Brisbane', state: 'Queensland', zip: '4000' },
+    { city: 'Perth', state: 'Western Australia', zip: '6000' },
+    { city: 'Adelaide', state: 'South Australia', zip: '5000' },
+    { city: 'Gold Coast', state: 'Queensland', zip: '4217' },
+    { city: 'Canberra', state: 'Australian Capital Territory', zip: '2600' },
+    { city: 'Newcastle', state: 'New South Wales', zip: '2300' },
+    { city: 'Hobart', state: 'Tasmania', zip: '7000' },
+    { city: 'Darwin', state: 'Northern Territory', zip: '0800' }
+  ],
+  'China': [
+    { city: 'Beijing', state: 'Beijing', zip: '100000' },
+    { city: 'Shanghai', state: 'Shanghai', zip: '200000' },
+    { city: 'Guangzhou', state: 'Guangdong', zip: '510000' },
+    { city: 'Shenzhen', state: 'Guangdong', zip: '518000' },
+    { city: 'Chengdu', state: 'Sichuan', zip: '610000' },
+    { city: 'Hangzhou', state: 'Zhejiang', zip: '310000' },
+    { city: 'Wuhan', state: 'Hubei', zip: '430000' },
+    { city: 'Xi\'an', state: 'Shaanxi', zip: '710000' },
+    { city: 'Nanjing', state: 'Jiangsu', zip: '210000' },
+    { city: 'Chongqing', state: 'Chongqing', zip: '400000' },
+    { city: 'Tianjin', state: 'Tianjin', zip: '300000' },
+    { city: 'Suzhou', state: 'Jiangsu', zip: '215000' },
+    { city: 'Dongguan', state: 'Guangdong', zip: '523000' },
+    { city: 'Qingdao', state: 'Shandong', zip: '266000' }
+  ],
+  'Japan': [
+    { city: 'Tokyo', state: 'Tokyo', zip: '100' },
+    { city: 'Osaka', state: 'Osaka', zip: '530' },
+    { city: 'Yokohama', state: 'Kanagawa', zip: '220' },
+    { city: 'Nagoya', state: 'Aichi', zip: '450' },
+    { city: 'Sapporo', state: 'Hokkaido', zip: '060' },
+    { city: 'Fukuoka', state: 'Fukuoka', zip: '810' },
+    { city: 'Kobe', state: 'Hyogo', zip: '650' },
+    { city: 'Kyoto', state: 'Kyoto', zip: '600' },
+    { city: 'Kawasaki', state: 'Kanagawa', zip: '210' },
+    { city: 'Sendai', state: 'Miyagi', zip: '980' }
+  ],
+  'South Korea': [
+    { city: 'Seoul', state: 'Seoul', zip: '04' },
+    { city: 'Busan', state: 'Busan', zip: '46' },
+    { city: 'Incheon', state: 'Incheon', zip: '21' },
+    { city: 'Daegu', state: 'Daegu', zip: '41' },
+    { city: 'Daejeon', state: 'Daejeon', zip: '34' },
+    { city: 'Gwangju', state: 'Gwangju', zip: '61' },
+    { city: 'Suwon', state: 'Gyeonggi', zip: '16' },
+    { city: 'Ulsan', state: 'Ulsan', zip: '44' },
+    { city: 'Changwon', state: 'South Gyeongsang', zip: '51' },
+    { city: 'Seongnam', state: 'Gyeonggi', zip: '13' }
+  ],
+  'Germany': [
+    { city: 'Berlin', state: 'Berlin', zip: '10' },
+    { city: 'Hamburg', state: 'Hamburg', zip: '20' },
+    { city: 'Munich', state: 'Bavaria', zip: '80' },
+    { city: 'Cologne', state: 'North Rhine-Westphalia', zip: '50' },
+    { city: 'Frankfurt', state: 'Hesse', zip: '60' },
+    { city: 'Stuttgart', state: 'Baden-Württemberg', zip: '70' },
+    { city: 'Düsseldorf', state: 'North Rhine-Westphalia', zip: '40' },
+    { city: 'Leipzig', state: 'Saxony', zip: '04' },
+    { city: 'Dortmund', state: 'North Rhine-Westphalia', zip: '44' },
+    { city: 'Dresden', state: 'Saxony', zip: '01' }
+  ],
+  'France': [
+    { city: 'Paris', state: 'Île-de-France', zip: '75' },
+    { city: 'Marseille', state: 'Provence-Alpes-Côte d\'Azur', zip: '13' },
+    { city: 'Lyon', state: 'Auvergne-Rhône-Alpes', zip: '69' },
+    { city: 'Toulouse', state: 'Occitanie', zip: '31' },
+    { city: 'Nice', state: 'Provence-Alpes-Côte d\'Azur', zip: '06' },
+    { city: 'Nantes', state: 'Pays de la Loire', zip: '44' },
+    { city: 'Strasbourg', state: 'Grand Est', zip: '67' },
+    { city: 'Montpellier', state: 'Occitanie', zip: '34' },
+    { city: 'Bordeaux', state: 'Nouvelle-Aquitaine', zip: '33' },
+    { city: 'Lille', state: 'Hauts-de-France', zip: '59' }
+  ],
+  'Russia': [
+    { city: 'Moscow', state: 'Moscow', zip: '101' },
+    { city: 'Saint Petersburg', state: 'Saint Petersburg', zip: '190' },
+    { city: 'Novosibirsk', state: 'Novosibirsk Oblast', zip: '630' },
+    { city: 'Yekaterinburg', state: 'Sverdlovsk Oblast', zip: '620' },
+    { city: 'Kazan', state: 'Tatarstan', zip: '420' },
+    { city: 'Nizhny Novgorod', state: 'Nizhny Novgorod Oblast', zip: '603' },
+    { city: 'Chelyabinsk', state: 'Chelyabinsk Oblast', zip: '454' },
+    { city: 'Samara', state: 'Samara Oblast', zip: '443' }
+  ],
+  'Spain': [
+    { city: 'Madrid', state: 'Madrid', zip: '28' },
+    { city: 'Barcelona', state: 'Catalonia', zip: '08' },
+    { city: 'Valencia', state: 'Valencia', zip: '46' },
+    { city: 'Seville', state: 'Andalusia', zip: '41' },
+    { city: 'Zaragoza', state: 'Aragon', zip: '50' },
+    { city: 'Málaga', state: 'Andalusia', zip: '29' },
+    { city: 'Murcia', state: 'Murcia', zip: '30' },
+    { city: 'Bilbao', state: 'Basque Country', zip: '48' }
+  ],
+  'Italy': [
+    { city: 'Rome', state: 'Lazio', zip: '00' },
+    { city: 'Milan', state: 'Lombardy', zip: '20' },
+    { city: 'Naples', state: 'Campania', zip: '80' },
+    { city: 'Turin', state: 'Piedmont', zip: '10' },
+    { city: 'Palermo', state: 'Sicily', zip: '90' },
+    { city: 'Genoa', state: 'Liguria', zip: '16' },
+    { city: 'Bologna', state: 'Emilia-Romagna', zip: '40' },
+    { city: 'Florence', state: 'Tuscany', zip: '50' },
+    { city: 'Venice', state: 'Veneto', zip: '30' }
+  ],
+  'Brazil': [
+    { city: 'São Paulo', state: 'São Paulo', zip: '01' },
+    { city: 'Rio de Janeiro', state: 'Rio de Janeiro', zip: '20' },
+    { city: 'Brasília', state: 'Federal District', zip: '70' },
+    { city: 'Salvador', state: 'Bahia', zip: '40' },
+    { city: 'Fortaleza', state: 'Ceará', zip: '60' },
+    { city: 'Belo Horizonte', state: 'Minas Gerais', zip: '30' },
+    { city: 'Curitiba', state: 'Paraná', zip: '80' },
+    { city: 'Recife', state: 'Pernambuco', zip: '50' }
+  ],
+  'India': [
+    { city: 'Mumbai', state: 'Maharashtra', zip: '400' },
+    { city: 'Delhi', state: 'Delhi', zip: '110' },
+    { city: 'Bangalore', state: 'Karnataka', zip: '560' },
+    { city: 'Hyderabad', state: 'Telangana', zip: '500' },
+    { city: 'Chennai', state: 'Tamil Nadu', zip: '600' },
+    { city: 'Kolkata', state: 'West Bengal', zip: '700' },
+    { city: 'Ahmedabad', state: 'Gujarat', zip: '380' },
+    { city: 'Pune', state: 'Maharashtra', zip: '411' },
+    { city: 'Jaipur', state: 'Rajasthan', zip: '302' }
+  ],
+  'Singapore': [
+    { city: 'Singapore', state: 'Central Region', zip: '01' },
+    { city: 'Jurong East', state: 'West Region', zip: '60' },
+    { city: 'Tampines', state: 'East Region', zip: '52' },
+    { city: 'Woodlands', state: 'North Region', zip: '73' },
+    { city: 'Bedok', state: 'East Region', zip: '46' },
+    { city: 'Ang Mo Kio', state: 'North-East Region', zip: '56' }
+  ],
+  'Taiwan': [
+    { city: 'Taipei', state: 'Taipei City', zip: '100' },
+    { city: 'Kaohsiung', state: 'Kaohsiung City', zip: '800' },
+    { city: 'Taichung', state: 'Taichung City', zip: '400' },
+    { city: 'Tainan', state: 'Tainan City', zip: '700' },
+    { city: 'Hsinchu', state: 'Hsinchu City', zip: '300' },
+    { city: 'Taoyuan', state: 'Taoyuan City', zip: '330' }
+  ],
+  'Hong Kong': [
+    { city: 'Central', state: 'Hong Kong Island', zip: '' },
+    { city: 'Kowloon', state: 'Kowloon', zip: '' },
+    { city: 'Tsim Sha Tsui', state: 'Kowloon', zip: '' },
+    { city: 'Mong Kok', state: 'Kowloon', zip: '' },
+    { city: 'Causeway Bay', state: 'Hong Kong Island', zip: '' },
+    { city: 'Sha Tin', state: 'New Territories', zip: '' }
+  ],
+  'Mexico': [
+    { city: 'Mexico City', state: 'Mexico City', zip: '06' },
+    { city: 'Guadalajara', state: 'Jalisco', zip: '44' },
+    { city: 'Monterrey', state: 'Nuevo León', zip: '64' },
+    { city: 'Puebla', state: 'Puebla', zip: '72' },
+    { city: 'Tijuana', state: 'Baja California', zip: '22' },
+    { city: 'Cancún', state: 'Quintana Roo', zip: '77' }
+  ]
 };
+
+// 当前选中的城市信息（用于保持城市和州的关联）
+let currentLocation = null;
 
 /**
  * 获取指定国家对应的语言
@@ -331,56 +640,148 @@ function generatePassword() {
 }
 
 /**
- * 生成电话号码
+ * 生成电话号码（根据国家格式）
  */
 function generatePhone(country) {
-  const code = COUNTRY_PHONE_CODES[country] || '+1';
-  const number = randomDigits(10);
-  return `${code} ${number.slice(0, 3)}-${number.slice(3, 6)}-${number.slice(6)}`;
+  const config = PHONE_FORMATS[country];
+
+  // 如果没有配置，使用默认美国格式
+  if (!config) {
+    const defaultConfig = PHONE_FORMATS['United States'];
+    const prefix = randomChoice(defaultConfig.areaCodePrefixes);
+    const remaining = randomDigits(defaultConfig.length - prefix.length);
+    return `${defaultConfig.code} ${defaultConfig.format(prefix + remaining)}`;
+  }
+
+  let phoneNumber = '';
+
+  // 处理有区号前缀的情况（如美国、加拿大、巴西、墨西哥）
+  if (config.areaCodePrefixes) {
+    const areaCode = randomChoice(config.areaCodePrefixes);
+
+    // 巴西特殊处理：区号 + 9 + 8位
+    if (config.mobileFirstDigit) {
+      const remaining = randomDigits(config.length - areaCode.length - 1);
+      phoneNumber = areaCode + config.mobileFirstDigit + remaining;
+    } else {
+      const remaining = randomDigits(config.length - areaCode.length);
+      phoneNumber = areaCode + remaining;
+    }
+  }
+  // 处理有手机前缀的情况（如中国、日本、英国等）
+  else if (config.mobilePrefixes) {
+    const prefix = randomChoice(config.mobilePrefixes);
+    const remaining = randomDigits(config.length - prefix.length);
+    phoneNumber = prefix + remaining;
+  }
+  // 默认情况
+  else {
+    phoneNumber = randomDigits(config.length);
+  }
+
+  // 应用格式化
+  const formattedNumber = config.format(phoneNumber);
+
+  return `${config.code} ${formattedNumber}`;
 }
 
 /**
- * 生成地址
+ * 生成地址（使用对应国家的街道名）
  */
-function generateAddress() {
+function generateAddress(country) {
+  const streets = STREET_NAMES[country] || STREET_NAMES['default'];
   const streetNum = Math.floor(Math.random() * 9999) + 1;
-  const street = randomChoice(STREET_NAMES);
-  const aptNum = Math.random() > 0.5 ? `, Apt ${Math.floor(Math.random() * 999) + 1}` : '';
+  const street = randomChoice(streets);
+  const aptNum = Math.random() > 0.7 ? `, Apt ${Math.floor(Math.random() * 999) + 1}` : '';
   return `${streetNum} ${street}${aptNum}`;
 }
 
 /**
- * 生成邮编
+ * 选择一个城市位置（返回城市、州、邮编前缀）
+ */
+function selectLocation(country) {
+  const locations = CITY_STATE_MAP[country] || CITY_STATE_MAP['United States'];
+  currentLocation = randomChoice(locations);
+  return currentLocation;
+}
+
+/**
+ * 获取当前位置信息
+ */
+function getCurrentLocation() {
+  return currentLocation;
+}
+
+/**
+ * 生成邮编（基于当前选中的城市）
  */
 function generateZipCode(country) {
-  if (country === 'United States' || country === 'Canada') {
-    return randomDigits(5);
+  const zipPrefix = currentLocation ? currentLocation.zip : '';
+
+  if (country === 'United States') {
+    // 美国: 5位数字，使用城市对应的前缀
+    return zipPrefix + randomDigits(5 - zipPrefix.length);
+  } else if (country === 'Canada') {
+    // 加拿大: 字母数字格式 A1A 1A1
+    const letters = 'ABCEGHJKLMNPRSTVXY';
+    return zipPrefix + randomChoice(letters.split('')) + randomDigits(1) + ' ' + randomDigits(1) + randomChoice(letters.split('')) + randomDigits(1);
   } else if (country === 'United Kingdom') {
-    return `${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${randomDigits(1)} ${randomDigits(1)}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`;
-  } else if (country === 'Germany') {
-    return randomDigits(5);
+    // 英国: 使用城市前缀
+    return zipPrefix + randomDigits(1) + ' ' + randomDigits(1) + String.fromCharCode(65 + Math.floor(Math.random() * 26)) + String.fromCharCode(65 + Math.floor(Math.random() * 26));
+  } else if (country === 'Germany' || country === 'France' || country === 'Spain' || country === 'Italy') {
+    // 欧洲: 5位数字
+    return zipPrefix + randomDigits(5 - zipPrefix.length);
   } else if (country === 'China') {
-    return randomDigits(6);
+    // 中国: 6位数字
+    return zipPrefix || randomDigits(6);
   } else if (country === 'Japan') {
-    return `${randomDigits(3)}-${randomDigits(4)}`;
+    // 日本: xxx-xxxx 格式
+    return zipPrefix + randomDigits(3 - zipPrefix.length) + '-' + randomDigits(4);
+  } else if (country === 'South Korea') {
+    // 韩国: 5位数字
+    return zipPrefix + randomDigits(5 - zipPrefix.length);
+  } else if (country === 'Australia') {
+    // 澳大利亚: 4位数字
+    return zipPrefix || randomDigits(4);
+  } else if (country === 'India') {
+    // 印度: 6位数字
+    return zipPrefix + randomDigits(6 - zipPrefix.length);
+  } else if (country === 'Brazil') {
+    // 巴西: xxxxx-xxx 格式
+    return zipPrefix + randomDigits(5 - zipPrefix.length) + '-' + randomDigits(3);
+  } else if (country === 'Russia') {
+    // 俄罗斯: 6位数字
+    return zipPrefix + randomDigits(6 - zipPrefix.length);
+  } else if (country === 'Hong Kong' || country === 'Singapore') {
+    // 香港/新加坡: 6位数字或无邮编
+    return zipPrefix ? zipPrefix + randomDigits(4) : randomDigits(6);
+  } else if (country === 'Taiwan') {
+    // 台湾: 3-5位数字
+    return zipPrefix || randomDigits(3);
+  } else if (country === 'Mexico') {
+    // 墨西哥: 5位数字
+    return zipPrefix + randomDigits(5 - zipPrefix.length);
   }
   return randomDigits(5);
 }
 
 /**
- * 生成城市
+ * 生成城市（使用关联数据）
  */
 function generateCity(country) {
-  const cities = COUNTRY_CITIES[country] || COUNTRY_CITIES['United States'];
-  return randomChoice(cities);
+  // 如果还没有选择位置，先选择一个
+  if (!currentLocation) {
+    selectLocation(country);
+  }
+  return currentLocation ? currentLocation.city : 'New York';
 }
 
 /**
- * 生成州/省份
+ * 生成州/省份（使用关联数据，与城市匹配）
  */
 function generateState(country) {
-  const states = COUNTRY_STATES[country] || COUNTRY_STATES['United States'];
-  return randomChoice(states);
+  // 使用当前选中的位置信息
+  return currentLocation ? currentLocation.state : 'New York';
 }
 
 /**
@@ -393,6 +794,9 @@ function generateAllInfo(ipData) {
   const lastName = generateLastName(country);
   const username = generateUsername(firstName, lastName);
 
+  // 先选择一个城市位置，确保城市、州、邮编关联
+  selectLocation(country);
+
   return {
     firstName,
     lastName,
@@ -400,7 +804,7 @@ function generateAllInfo(ipData) {
     email: generateEmail(username),
     password: generatePassword(),
     phone: generatePhone(country),
-    address: generateAddress(),
+    address: generateAddress(country),
     city: generateCity(country),
     state: generateState(country),
     zipCode: generateZipCode(country),
@@ -428,11 +832,25 @@ function regenerateField(fieldName, currentData, ipData) {
     case 'phone':
       return generatePhone(country);
     case 'address':
-      return generateAddress();
+      return generateAddress(country);
     case 'city':
-      return generateCity(country);
+      // 刷新城市时重新选择位置，返回包含城市、州、邮编的对象
+      selectLocation(country);
+      return {
+        city: currentLocation.city,
+        state: currentLocation.state,
+        zipCode: generateZipCode(country),
+        _isLocationUpdate: true  // 标记这是位置更新
+      };
     case 'state':
-      return generateState(country);
+      // 州与城市关联，单独刷新州时也重新选择位置
+      selectLocation(country);
+      return {
+        city: currentLocation.city,
+        state: currentLocation.state,
+        zipCode: generateZipCode(country),
+        _isLocationUpdate: true
+      };
     case 'zipCode':
       return generateZipCode(country);
     case 'country':
