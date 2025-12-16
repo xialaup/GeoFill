@@ -302,13 +302,18 @@ function bindEvents() {
     // 监听国家选择变化，重新生成相关信息
     elements.fields.country.addEventListener('change', () => {
         const newCountry = elements.fields.country.value;
+
+        // 更新 ipData，清除城市和州信息（因为是手动选择国家，应根据新国家随机生成）
         ipData.country = newCountry;
+        ipData.city = '';     // 清除城市
+        ipData.region = '';   // 清除州/地区
 
         // 使用 generateAllInfo 重新生成所有信息，确保地址关联正确
         currentData = window.generators.generateAllInfo(ipData);
 
         updateUI();
         saveDataToStorage();
+        showToast(`已切换到 ${newCountry}`);
     });
 
     // 监听邮箱后缀选择变化
