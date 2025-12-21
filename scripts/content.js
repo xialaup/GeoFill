@@ -1,10 +1,12 @@
-/**
+﻿/**
  * Content Script - 表单自动填写（增强版）
  */
 
 // 常见表单字段选择器映射（扩展版）
 const FIELD_SELECTORS = {
     firstName: [
+        // XServer VPS 特殊字段
+        'input[name="name2"]',
         // 标准属性匹配
         'input[name*="first" i]',
         'input[name*="fname" i]',
@@ -14,7 +16,8 @@ const FIELD_SELECTORS = {
         // placeholder 匹配
         'input[placeholder*="first" i]',
         'input[placeholder*="given" i]',
-        'input[placeholder*="名" i]',
+        'input[placeholder*="名" i]:not([placeholder*="姓" i])',
+        'input[placeholder="太郎"]',
         // autocomplete 标准
         'input[autocomplete="given-name"]',
         'input[autocomplete="first-name"]',
@@ -26,6 +29,8 @@ const FIELD_SELECTORS = {
         'input[data-type*="first" i]'
     ],
     lastName: [
+        // XServer VPS 特殊字段
+        'input[name="name1"]',
         'input[name*="last" i]',
         'input[name*="lname" i]',
         'input[name*="surname" i]',
@@ -36,7 +41,8 @@ const FIELD_SELECTORS = {
         'input[placeholder*="last" i]',
         'input[placeholder*="surname" i]',
         'input[placeholder*="family" i]',
-        'input[placeholder*="姓" i]',
+        'input[placeholder*="姓" i]:not([placeholder*="名" i])',
+        'input[placeholder="山田"]',
         'input[autocomplete="family-name"]',
         'input[autocomplete="last-name"]',
         'input[aria-label*="last" i]',
@@ -85,6 +91,8 @@ const FIELD_SELECTORS = {
         'input[data-field*="user" i]'
     ],
     email: [
+        // XServer 特殊字段
+        'input[name="mailaddress"]',
         'input[type="email"]',
         'input[name*="email" i]',
         'input[name*="mail" i]',
@@ -133,7 +141,10 @@ const FIELD_SELECTORS = {
         'input[data-field*="phone" i]'
     ],
     address: [
-        'input[name*="address" i]',
+        // XServer 特殊字段 - 町域・番地
+        'input[name="address2"]',
+        // 排除邮箱字段
+        'input[name*="address" i]:not([type="email"]):not([name*="mail" i])',
         'input[name*="street" i]',
         'input[name*="addr" i]',
         'input[id*="address" i]',
@@ -213,6 +224,101 @@ const FIELD_SELECTORS = {
         'input[autocomplete="country"]',
         'input[aria-label*="country" i]',
         'select[aria-label*="country" i]'
+    ],
+    // 日本漢字姓（姓）
+    lastNameKanji: [
+        'input[name*="sei" i]:not([name*="seimei" i])',
+        'input[name*="family_name_kanji" i]',
+        'input[name*="last_name_kanji" i]',
+        'input[placeholder*="姓" i]:not([placeholder*="姓名" i])',
+        'input[placeholder*="山田" i]',
+        'input[aria-label*="姓（漢字）" i]',
+        'input[aria-label*="姓 漢字" i]'
+    ],
+    // 日本漢字名（名）
+    firstNameKanji: [
+        'input[name*="mei" i]:not([name*="seimei" i])',
+        'input[name*="given_name_kanji" i]',
+        'input[name*="first_name_kanji" i]',
+        'input[placeholder*="名" i]:not([placeholder*="姓名" i]):not([placeholder*="名前" i])',
+        'input[placeholder*="太郎" i]',
+        'input[aria-label*="名（漢字）" i]',
+        'input[aria-label*="名 漢字" i]'
+    ],
+    // 日本片假名姓（セイ）
+    lastNameKana: [
+        'input[name="name_kana1"]',
+        'input[name*="kana_sei" i]',
+        'input[name*="sei_kana" i]',
+        'input[name*="family_name_kana" i]',
+        'input[name*="last_name_kana" i]',
+        'input[name*="furigana_sei" i]',
+        'input[placeholder*="セイ" i]',
+        'input[placeholder*="ヤマダ" i]',
+        'input[aria-label*="姓（カナ）" i]',
+        'input[aria-label*="姓 カナ" i]',
+        'input[aria-label*="フリガナ" i]:not([aria-label*="名" i])'
+    ],
+    // 日本片假名名（メイ）
+    firstNameKana: [
+        'input[name="name_kana2"]',
+        'input[name*="kana_mei" i]',
+        'input[name*="mei_kana" i]',
+        'input[name*="given_name_kana" i]',
+        'input[name*="first_name_kana" i]',
+        'input[name*="furigana_mei" i]',
+        'input[placeholder*="メイ" i]',
+        'input[placeholder*="タロウ" i]',
+        'input[aria-label*="名（カナ）" i]',
+        'input[aria-label*="名 カナ" i]'
+    ],
+    // 日本都道府県
+    prefectureJp: [
+        'input[name*="prefecture" i]',
+        'input[name*="todofuken" i]',
+        'select[name*="prefecture" i]',
+        'select[name*="todofuken" i]',
+        'input[placeholder*="都道府県" i]',
+        'input[placeholder*="東京都" i]',
+        'select[aria-label*="都道府県" i]'
+    ],
+    // 日本市区町村
+    cityJp: [
+        'input[name*="shikuchoson" i]',
+        'input[name*="city_jp" i]',
+        'input[placeholder*="市区町村" i]',
+        'input[placeholder*="千代田区" i]',
+        'input[aria-label*="市区町村" i]'
+    ],
+    // 日本町域・番地
+    chomeJp: [
+        'input[name*="choiki" i]',
+        'input[name*="banchi" i]',
+        'input[name*="chome" i]',
+        'input[name*="address1_jp" i]',
+        'input[placeholder*="町域" i]',
+        'input[placeholder*="丁目" i]',
+        'input[placeholder*="番地" i]',
+        'input[aria-label*="町域" i]',
+        'input[aria-label*="丁目・番地" i]'
+    ],
+    // 日本建物名
+    buildingJp: [
+        'input[name*="tatemono" i]',
+        'input[name*="building_jp" i]',
+        'input[name*="address2_jp" i]',
+        'input[placeholder*="建物名" i]',
+        'input[placeholder*="マンション" i]',
+        'input[placeholder*="ビル" i]',
+        'input[aria-label*="建物名" i]'
+    ],
+    // 日本電話番号（無国番）
+    phoneJp: [
+        'input[name*="tel_jp" i]',
+        'input[placeholder*="090" i]',
+        'input[placeholder*="080" i]',
+        'input[placeholder*="070" i]',
+        'input[aria-label*="電話番号" i]'
     ]
 };
 
@@ -420,6 +526,16 @@ function fillForm(data) {
     for (const [fieldName, value] of Object.entries(data)) {
         if (!value) continue;
 
+        // address 字段延迟到最后填写，避免被邮编自动填充覆盖
+        if (fieldName === 'address') {
+            continue;
+        }
+
+        // 跳过 gender 字段（日本网站通常不需要，且容易误匹配其他 radio）
+        if (fieldName === 'gender') {
+            continue;
+        }
+
         // 密码字段需要填写所有匹配项（密码 + 确认密码）
         if (fieldName === 'password') {
             const elements = findAllFields('password');
@@ -497,6 +613,25 @@ function fillForm(data) {
     }
 
     console.log('[GeoFill] 填写完成:', filledCount, '个字段', results);
+
+    // 最后填写 address 字段，避免被邮编自动填充覆盖
+    if (data.address) {
+        setTimeout(() => {
+            const addressEl = findField('address');
+            if (addressEl) {
+                // 确保不是邮箱字段
+                const elName = (addressEl.name || '').toLowerCase();
+                const elType = (addressEl.type || '').toLowerCase();
+                if (elType === 'email' || elName.includes('mail')) {
+                    console.log('[GeoFill] 跳过 address 填写，目标是邮箱字段');
+                } else {
+                    addressEl.value = data.address;
+                    console.log('[GeoFill] 延迟填写 address:', data.address);
+                }
+            }
+        }, 1500);
+    }
+
     return { filledCount, results };
 }
 

@@ -623,3 +623,25 @@ body.light-theme .btn-small {
   text-align: center;
   padding: 12px;
 }
+
+/* Japan Fields Section */
+.japan-fields {
+  border-top: 2px solid var(--accent-primary);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+.japan-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  background: rgba(0, 217, 255, 0.1);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.japan-fields .field-group label {
+  width: 70px;
+}

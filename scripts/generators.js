@@ -974,6 +974,34 @@ if (typeof window !== 'undefined') {
     var ipCity = ipData.city || '';
     var ipRegion = ipData.region || '';
     var gender = generateGender();
+    
+    // 日本专用处理：使用汉字姓名和日本地址
+    if (country === 'Japan' && window.japanGenerators) {
+      var japanName = window.japanGenerators.generateJapanName(gender);
+      var japanAddr = window.japanGenerators.generateJapanAddress();
+      var japanPhone = window.japanGenerators.generateJapanPhone();
+      var username = generateUsername(japanName.firstNameRomaji, japanName.lastNameRomaji);
+      return {
+        firstName: japanName.firstNameKanji,
+        lastName: japanName.lastNameKanji,
+        firstNameKana: japanName.firstNameKana,
+        lastNameKana: japanName.lastNameKana,
+        fullName: japanName.lastNameKanji + ' ' + japanName.firstNameKanji,
+        fullNameKana: japanName.lastNameKana + ' ' + japanName.firstNameKana,
+        gender: gender,
+        birthday: generateBirthday(settings.minAge || 18, settings.maxAge || 55),
+        username: username,
+        email: generateEmail(username),
+        password: generatePasswordWithSettings(settings),
+        phone: japanPhone,
+        address: japanAddr.chome,
+        city: japanAddr.prefecture + japanAddr.city,
+        state: japanAddr.building,
+        zipCode: japanAddr.zipCode,
+        country: country
+      };
+    }
+    
     var firstName = generateFirstName(country);
     var lastName = generateLastName(country);
     var username = generateUsername(firstName, lastName);

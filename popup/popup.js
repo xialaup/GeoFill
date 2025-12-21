@@ -659,13 +659,15 @@ function updateUI() {
  */
 async function fillFormInPage() {
     updateCurrentDataFromInputs();
-
     try {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        await chrome.tabs.sendMessage(tab.id, {
-            action: 'fillForm',
-            data: currentData
-        });
+        try {
+            await chrome.tabs.sendMessage(tab.id, { action: 'fillForm', data: currentData });
+        } catch (e) {
+            await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['scripts/content.js'] });
+            await new Promise(r => setTimeout(r, 100));
+            await chrome.tabs.sendMessage(tab.id, { action: 'fillForm', data: currentData });
+        }
         window.close();
     } catch (error) {
         console.error('填写表单失败:', error);
@@ -933,3 +935,4 @@ function bindSettingsEvents() {
 // 暴露函数给全局
 window.loadArchive = loadArchive;
 window.deleteArchive = deleteArchive;
+
