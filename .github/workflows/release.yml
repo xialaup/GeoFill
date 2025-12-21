@@ -1,0 +1,44 @@
+name: Build and Release Extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from manifest
+        id: version
+        run: |
+          VERSION=$(cat manifest.json | jq -r '.version')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create zip package
+        run: |
+          zip -r GeoFill-v${{ steps.version.outputs.version }}.zip . \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x "*.md" \
+            -x ".gitignore"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GeoFill-v${{ steps.version.outputs.version }}
+          path: GeoFill-v${{ steps.version.outputs.version }}.zip
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: GeoFill-v${{ steps.version.outputs.version }}.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
