@@ -13,6 +13,7 @@
     <header class="header">
       <h1>🌍 GeoFill</h1>
       <div class="header-actions">
+        <button class="history-btn" id="openHistory" title="历史记录">📜</button>
         <button class="settings-btn" id="openSettings" title="设置">⚙️</button>
         <button class="theme-toggle" id="themeToggle" title="切换主题">🌙</button>
       </div>
@@ -300,6 +301,25 @@
           <div class="archive-list" id="archiveList">
             <!-- 动态生成存档列表 -->
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 历史记录模态框 -->
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>📜 历史记录</h2>
+        <button class="modal-close" id="closeHistory">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="history-info">最近使用的 10 组数据</div>
+        <div class="history-list" id="historyList">
+          <div class="history-empty">暂无历史记录</div>
+        </div>
+        <div class="history-actions">
+          <button class="btn btn-small btn-danger" id="clearHistory">🗑️ 清空历史</button>
         </div>
       </div>
     </div>

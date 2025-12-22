@@ -43,7 +43,13 @@ const elements = {
     // 邮箱元素
     inboxGroup: null,
     refreshInbox: null,
-    inboxList: null
+    inboxList: null,
+    // 历史记录元素
+    openHistory: null,
+    closeHistory: null,
+    historyModal: null,
+    historyList: null,
+    clearHistory: null
 };
 
 // 字段列表
@@ -59,7 +65,9 @@ const LOCKED_KEY = 'geoFillLockedFields';
 const SETTINGS_KEY = 'geoFillSettings';
 const ARCHIVES_KEY = 'geoFillArchives';
 const AUTO_CLEAR_KEY = 'geoFillAutoClear';
+const HISTORY_KEY = 'geoFillHistory';
 const CACHE_VERSION = 'v3';
+const MAX_HISTORY_ITEMS = 10;
 
 // 默认设置
 let userSettings = {
@@ -200,6 +208,184 @@ async function loadDataFromStorage() {
 }
 
 /**
+ * 保存当前数据到历史记录
+ */
+async function saveToHistory() {
+    if (!currentData || !currentData.firstName) return;
+
+    try {
+        const result = await chrome.storage.local.get(HISTORY_KEY);
+        let history = result[HISTORY_KEY] || [];
+
+        // 创建历史记录项
+        const historyItem = {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            data: { ...currentData },
+            country: ipData.country || 'Unknown'
+        };
+
+        // 检查是否已存在相同邮箱的记录，避免重复
+        const existingIndex = history.findIndex(item => item.data.email === currentData.email);
+        if (existingIndex !== -1) {
+            history.splice(existingIndex, 1);
+        }
+
+        // 添加到开头
+        history.unshift(historyItem);
+
+        // 限制数量
+        if (history.length > MAX_HISTORY_ITEMS) {
+            history = history.slice(0, MAX_HISTORY_ITEMS);
+        }
+
+        await chrome.storage.local.set({ [HISTORY_KEY]: history });
+        console.log('[GeoFill] 已保存到历史记录');
+    } catch (e) {
+        console.log('保存历史记录失败:', e);
+    }
+}
+
+/**
+ * 加载历史记录列表
+ */
+async function loadHistoryList() {
+    try {
+        const result = await chrome.storage.local.get(HISTORY_KEY);
+        const history = result[HISTORY_KEY] || [];
+        renderHistoryList(history);
+    } catch (e) {
+        console.log('加载历史记录失败:', e);
+    }
+}
+
+/**
+ * 渲染历史记录列表
+ */
+function renderHistoryList(history) {
+    if (!elements.historyList) return;
+
+    if (!history || history.length === 0) {
+        elements.historyList.innerHTML = '<div class="history-empty">暂无历史记录</div>';
+        return;
+    }
+
+    elements.historyList.innerHTML = history.map(item => {
+        const data = item.data;
+        const name = `${data.firstName || ''} ${data.lastName || ''}`.trim() || '未知';
+        const email = data.email || '无邮箱';
+        const time = formatHistoryTime(item.timestamp);
+
+        return `
+            <div class="history-item" data-id="${item.id}">
+                <div class="history-item-info" title="点击加载此记录">
+                    <div class="history-item-name">${name}</div>
+                    <div class="history-item-email">${email}</div>
+                </div>
+                <div class="history-item-time">${time}</div>
+                <button class="history-item-delete" data-id="${item.id}" title="删除">🗑️</button>
+            </div>
+        `;
+    }).join('');
+
+    // 绑定点击事件
+    elements.historyList.querySelectorAll('.history-item-info').forEach(el => {
+        el.addEventListener('click', (e) => {
+            const item = e.currentTarget.closest('.history-item');
+            const id = parseInt(item.dataset.id);
+            loadHistoryItem(id);
+        });
+    });
+
+    // 绑定删除事件
+    elements.historyList.querySelectorAll('.history-item-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = parseInt(e.currentTarget.dataset.id);
+            deleteHistoryItem(id);
+        });
+    });
+}
+
+/**
+ * 格式化历史记录时间
+ */
+function formatHistoryTime(isoString) {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diff = now - date;
+
+    // 小于1分钟
+    if (diff < 60000) return '刚刚';
+    // 小于1小时
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
+    // 小于24小时
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
+    // 小于7天
+    if (diff < 604800000) return `${Math.floor(diff / 86400000)}天前`;
+    // 其他
+    return `${date.getMonth() + 1}/${date.getDate()}`;
+}
+
+/**
+ * 加载历史记录项
+ */
+async function loadHistoryItem(id) {
+    try {
+        const result = await chrome.storage.local.get(HISTORY_KEY);
+        const history = result[HISTORY_KEY] || [];
+        const item = history.find(h => h.id === id);
+
+        if (item && item.data) {
+            currentData = { ...item.data };
+            ipData.country = item.country || currentData.country || 'United States';
+
+            updateUI();
+            saveDataToStorage();
+
+            // 关闭模态框
+            if (elements.historyModal) {
+                elements.historyModal.classList.remove('show');
+            }
+
+            showToast('已加载历史记录');
+        }
+    } catch (e) {
+        console.log('加载历史记录项失败:', e);
+    }
+}
+
+/**
+ * 删除历史记录项
+ */
+async function deleteHistoryItem(id) {
+    try {
+        const result = await chrome.storage.local.get(HISTORY_KEY);
+        let history = result[HISTORY_KEY] || [];
+        history = history.filter(h => h.id !== id);
+
+        await chrome.storage.local.set({ [HISTORY_KEY]: history });
+        renderHistoryList(history);
+        showToast('已删除');
+    } catch (e) {
+        console.log('删除历史记录项失败:', e);
+    }
+}
+
+/**
+ * 清空所有历史记录
+ */
+async function clearAllHistory() {
+    try {
+        await chrome.storage.local.remove(HISTORY_KEY);
+        renderHistoryList([]);
+        showToast('历史记录已清空');
+    } catch (e) {
+        console.log('清空历史记录失败:', e);
+    }
+}
+
+/**
  * 加载主题设置
  */
 async function loadTheme() {
@@ -288,6 +474,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     elements.inboxGroup = document.getElementById('inboxGroup');
     elements.refreshInbox = document.getElementById('refreshInbox');
     elements.inboxList = document.getElementById('inboxList');
+    // 历史记录元素
+    elements.openHistory = document.getElementById('openHistory');
+    elements.closeHistory = document.getElementById('closeHistory');
+    elements.historyModal = document.getElementById('historyModal');
+    elements.historyList = document.getElementById('historyList');
+    elements.clearHistory = document.getElementById('clearHistory');
 
     try { await loadTheme(); } catch (e) { console.log('loadTheme error:', e); }
     try { await loadSettings(); } catch (e) { console.log('loadSettings error:', e); }
@@ -1161,6 +1353,7 @@ Example:
             await chrome.tabs.sendMessage(tab.id, { action: 'fillFormSmart', data: mapping });
 
             showToast('AI 智能填写完成');
+            saveToHistory();
             window.close();
 
         } else {
@@ -1179,6 +1372,7 @@ Example:
                 await new Promise(r => setTimeout(r, 200));
                 await chrome.tabs.sendMessage(tab.id, { action: 'fillForm', data: currentData });
             }
+            saveToHistory();
             window.close();
         }
 
@@ -1487,6 +1681,40 @@ function bindSettingsEvents() {
             el.addEventListener('change', saveSettings);
         }
     });
+
+    // 历史记录事件
+    if (elements.openHistory) {
+        elements.openHistory.addEventListener('click', () => {
+            if (elements.historyModal) {
+                elements.historyModal.classList.add('show');
+                loadHistoryList();
+            }
+        });
+    }
+
+    if (elements.closeHistory) {
+        elements.closeHistory.addEventListener('click', () => {
+            if (elements.historyModal) {
+                elements.historyModal.classList.remove('show');
+            }
+        });
+    }
+
+    if (elements.historyModal) {
+        elements.historyModal.addEventListener('click', (e) => {
+            if (e.target === elements.historyModal) {
+                elements.historyModal.classList.remove('show');
+            }
+        });
+    }
+
+    if (elements.clearHistory) {
+        elements.clearHistory.addEventListener('click', () => {
+            if (confirm('确定要清空所有历史记录吗？')) {
+                clearAllHistory();
+            }
+        });
+    }
 }
 
 // 暴露函数给全局

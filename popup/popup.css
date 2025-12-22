@@ -662,3 +662,136 @@ body.light-theme .btn-small {
   background: var(--bg-hover);
   box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.1);
 }
+
+/* History Button */
+.history-btn {
+  width: 28px;
+  height: 28px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 6px;
+}
+
+.history-btn:hover {
+  background: rgba(255, 193, 7, 0.2);
+  border-color: #ffc107;
+}
+
+/* History List */
+.history-info {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 10px;
+}
+
+.history-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.history-item:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+}
+
+.history-item:last-child {
+  margin-bottom: 0;
+}
+
+.history-item-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.history-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-item-email {
+  font-size: 11px;
+  color: var(--accent-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-item-time {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-right: 8px;
+  white-space: nowrap;
+}
+
+.history-item-delete {
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.history-item-delete:hover {
+  background: rgba(255, 77, 77, 0.2);
+  border-color: #ff4d4d;
+}
+
+.history-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 30px 12px;
+}
+
+.history-actions {
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: center;
+}
+
+.btn-danger {
+  background: rgba(255, 77, 77, 0.2) !important;
+  color: #ff6b6b !important;
+  border: 1px solid #ff4d4d !important;
+}
+
+.btn-danger:hover {
+  background: rgba(255, 77, 77, 0.4) !important;
+  box-shadow: 0 4px 12px rgba(255, 77, 77, 0.3);
+}
