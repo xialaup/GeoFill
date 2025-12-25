@@ -2,6 +2,141 @@
  * 信息生成器 - 根据IP地理位置生成随机注册信息
  */
 
+// Geoapify API Key（由用户在设置中配置）
+let geoapifyApiKey = null;
+
+/**
+ * 设置 Geoapify API Key
+ */
+function setGeoapifyApiKey(key) {
+  geoapifyApiKey = key && key.trim() ? key.trim() : null;
+  console.log('[GeoFill] Geoapify API Key 已' + (geoapifyApiKey ? '设置' : '清除'));
+}
+
+/**
+ * 城市坐标数据（用于 Geoapify API 调用）
+ */
+const CITY_COORDINATES = {
+  // 美国
+  'New York': { lat: 40.7128, lon: -74.0060 },
+  'Los Angeles': { lat: 34.0522, lon: -118.2437 },
+  'Chicago': { lat: 41.8781, lon: -87.6298 },
+  'Houston': { lat: 29.7604, lon: -95.3698 },
+  'Phoenix': { lat: 33.4484, lon: -112.0740 },
+  'San Francisco': { lat: 37.7749, lon: -122.4194 },
+  'Seattle': { lat: 47.6062, lon: -122.3321 },
+  'Miami': { lat: 25.7617, lon: -80.1918 },
+  'Boston': { lat: 42.3601, lon: -71.0589 },
+  'Denver': { lat: 39.7392, lon: -104.9903 },
+  // 英国
+  'London': { lat: 51.5074, lon: -0.1278 },
+  'Manchester': { lat: 53.4808, lon: -2.2426 },
+  'Birmingham': { lat: 52.4862, lon: -1.8904 },
+  // 加拿大
+  'Toronto': { lat: 43.6532, lon: -79.3832 },
+  'Vancouver': { lat: 49.2827, lon: -123.1207 },
+  'Montreal': { lat: 45.5017, lon: -73.5673 },
+  // 澳大利亚
+  'Sydney': { lat: -33.8688, lon: 151.2093 },
+  'Melbourne': { lat: -37.8136, lon: 144.9631 },
+  'Brisbane': { lat: -27.4698, lon: 153.0251 },
+  // 中国
+  'Beijing': { lat: 39.9042, lon: 116.4074 },
+  'Shanghai': { lat: 31.2304, lon: 121.4737 },
+  'Guangzhou': { lat: 23.1291, lon: 113.2644 },
+  'Shenzhen': { lat: 22.5431, lon: 114.0579 },
+  'Hangzhou': { lat: 30.2741, lon: 120.1551 },
+  // 日本
+  'Tokyo': { lat: 35.6762, lon: 139.6503 },
+  'Osaka': { lat: 34.6937, lon: 135.5023 },
+  'Yokohama': { lat: 35.4437, lon: 139.6380 },
+  'Kyoto': { lat: 35.0116, lon: 135.7681 },
+  // 韩国
+  'Seoul': { lat: 37.5665, lon: 126.9780 },
+  'Busan': { lat: 35.1796, lon: 129.0756 },
+  'Incheon': { lat: 37.4563, lon: 126.7052 },
+  // 德国
+  'Berlin': { lat: 52.5200, lon: 13.4050 },
+  'Munich': { lat: 48.1351, lon: 11.5820 },
+  'Frankfurt': { lat: 50.1109, lon: 8.6821 },
+  // 法国
+  'Paris': { lat: 48.8566, lon: 2.3522 },
+  'Lyon': { lat: 45.7640, lon: 4.8357 },
+  'Marseille': { lat: 43.2965, lon: 5.3698 },
+  // 新加坡
+  'Singapore': { lat: 1.3521, lon: 103.8198 },
+  'Jurong East': { lat: 1.3329, lon: 103.7436 },
+  'Tampines': { lat: 1.3496, lon: 103.9568 },
+  // 香港
+  'Central': { lat: 22.2819, lon: 114.1577 },
+  'Kowloon': { lat: 22.3193, lon: 114.1694 },
+  'Tsim Sha Tsui': { lat: 22.2988, lon: 114.1722 },
+  // 台湾
+  'Taipei': { lat: 25.0330, lon: 121.5654 },
+  'Kaohsiung': { lat: 22.6273, lon: 120.3014 },
+  'Taichung': { lat: 24.1477, lon: 120.6736 },
+  // 俄罗斯
+  'Moscow': { lat: 55.7558, lon: 37.6173 },
+  'Saint Petersburg': { lat: 59.9343, lon: 30.3351 },
+  // 西班牙
+  'Madrid': { lat: 40.4168, lon: -3.7038 },
+  'Barcelona': { lat: 41.3851, lon: 2.1734 },
+  // 意大利
+  'Rome': { lat: 41.9028, lon: 12.4964 },
+  'Milan': { lat: 45.4642, lon: 9.1900 },
+  // 巴西
+  'São Paulo': { lat: -23.5505, lon: -46.6333 },
+  'Rio de Janeiro': { lat: -22.9068, lon: -43.1729 },
+  // 印度
+  'Mumbai': { lat: 19.0760, lon: 72.8777 },
+  'Delhi': { lat: 28.7041, lon: 77.1025 },
+  'Bangalore': { lat: 12.9716, lon: 77.5946 },
+  // 墨西哥
+  'Mexico City': { lat: 19.4326, lon: -99.1332 },
+  'Guadalajara': { lat: 20.6597, lon: -103.3496 },
+  // 荷兰
+  'Amsterdam': { lat: 52.3676, lon: 4.9041 },
+  'Rotterdam': { lat: 51.9244, lon: 4.4777 }
+};
+
+/**
+ * 调用 Geoapify Reverse Geocoding API 获取真实地址
+ */
+async function fetchRealAddressFromApi(lat, lon) {
+  if (!geoapifyApiKey) return null;
+
+  // 在城市中心附近小范围偏移 (约 300-500m)，避免落到其他城市
+  const offsetLat = lat + (Math.random() - 0.5) * 0.005;
+  const offsetLon = lon + (Math.random() - 0.5) * 0.005;
+
+  const url = `https://api.geoapify.com/v1/geocode/reverse?lat=${offsetLat}&lon=${offsetLon}&apiKey=${geoapifyApiKey}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.log('[GeoFill] Geoapify API 请求失败:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+
+    if (data.features && data.features.length > 0) {
+      const props = data.features[0].properties;
+      return {
+        address: props.address_line1 || props.street || props.name,
+        city: props.city || props.town || props.municipality,
+        state: props.state || props.county,
+        zipCode: props.postcode,
+        country: props.country
+      };
+    }
+  } catch (e) {
+    console.log('[GeoFill] Geoapify API 调用失败:', e);
+  }
+
+  return null;
+}
+
 // 各国常见名字库
 const NAME_DATABASE = {
   // 英语国家
@@ -275,6 +410,39 @@ const STREET_NAMES = {
     'Berliner Straße', 'Münchner Straße', 'Frankfurter Allee'],
   'France': ['Rue de la Paix', 'Avenue des Champs-Élysées', 'Boulevard Saint-Germain', 'Rue de Rivoli',
     'Boulevard Haussmann', 'Rue du Faubourg Saint-Honoré', 'Avenue Montaigne'],
+  // 韩国街道
+  'South Korea': ['Gangnam-daero', 'Teheran-ro', 'Sejong-daero', 'Itaewon-ro', 'Hongdae-ro', 'Myeongdong-gil',
+    'Samseong-ro', 'Apgujeong-ro', 'Sinsa-dong-gil', 'Bukchon-ro', 'Insadong-gil', 'Jongno'],
+  // 俄罗斯街道
+  'Russia': ['Tverskaya Ulitsa', 'Nevsky Prospekt', 'Arbat Ulitsa', 'Kutuzovsky Prospekt', 'Leninsky Prospekt',
+    'Novy Arbat', 'Sadovaya Ulitsa', 'Bolshaya Morskaya', 'Liteyny Prospekt', 'Moskovsky Prospekt'],
+  // 西班牙街道
+  'Spain': ['Gran Vía', 'Paseo de la Castellana', 'Calle Mayor', 'La Rambla', 'Passeig de Gràcia',
+    'Calle Serrano', 'Calle de Alcalá', 'Avenida Diagonal', 'Calle Preciados', 'Calle Fuencarral'],
+  // 意大利街道
+  'Italy': ['Via del Corso', 'Via Condotti', 'Via Montenapoleone', 'Via Roma', 'Via Veneto',
+    'Via della Spiga', 'Corso Buenos Aires', 'Via Toledo', 'Via Tornabuoni', 'Corso Vittorio Emanuele'],
+  // 巴西街道
+  'Brazil': ['Avenida Paulista', 'Rua Oscar Freire', 'Avenida Atlântica', 'Rua Augusta', 'Avenida Rio Branco',
+    'Rua das Laranjeiras', 'Avenida Vieira Souto', 'Rua do Catete', 'Avenida Nossa Senhora de Copacabana'],
+  // 印度街道
+  'India': ['MG Road', 'Brigade Road', 'Commercial Street', 'Park Street', 'Connaught Place',
+    'Marine Drive', 'Linking Road', 'FC Road', 'Residency Road', 'Anna Salai', 'Mount Road'],
+  // 新加坡街道
+  'Singapore': ['Orchard Road', 'Raffles Boulevard', 'Marina Bay', 'Shenton Way', 'Bukit Timah Road',
+    'Changi Road', 'Serangoon Road', 'Tanjong Pagar Road', 'Beach Road', 'Victoria Street', 'Arab Street'],
+  // 香港街道
+  'Hong Kong': ['Nathan Road', 'Queen\'s Road', 'Des Voeux Road', 'Hennessy Road', 'Canton Road',
+    'Lockhart Road', 'Jaffe Road', 'Wellington Street', 'Hollywood Road', 'Tsim Sha Tsui Promenade'],
+  // 台湾街道
+  'Taiwan': ['Zhongxiao Road', 'Xinyi Road', 'Renai Road', 'Dunhua Road', 'Zhongshan Road',
+    'Nanjing Road', 'Minquan Road', 'Minsheng Road', 'Fuxing Road', 'Guangfu Road', 'Zhongzheng Road'],
+  // 墨西哥街道
+  'Mexico': ['Paseo de la Reforma', 'Avenida Insurgentes', 'Avenida Juárez', 'Calle Madero',
+    'Avenida Chapultepec', 'Calle 5 de Mayo', 'Avenida Revolución', 'Calle Hidalgo', 'Avenida Universidad'],
+  // 荷兰街道
+  'Netherlands': ['Kalverstraat', 'Leidsestraat', 'Damrak', 'Rokin', 'Nieuwendijk',
+    'P.C. Hooftstraat', 'Van Baerlestraat', 'Beethovenstraat', 'Utrechtsestraat', 'Haarlemmerstraat'],
   'default': ['Main St', 'Central Ave', 'Park Rd', 'First St', 'Second Ave', 'Third St', 'North Rd', 'South Blvd']
 };
 
@@ -1059,6 +1227,38 @@ if (typeof window !== 'undefined') {
     normalizeCountry: normalizeCountry,
     setCustomEmailDomain: setCustomEmailDomain,
     getCustomEmailDomain: getCustomEmailDomain,
-    getAllEmailDomains: getAllEmailDomains
+    getAllEmailDomains: getAllEmailDomains,
+    // Geoapify 相关
+    setGeoapifyApiKey: setGeoapifyApiKey,
+    fetchRealAddressFromApi: fetchRealAddressFromApi,
+    CITY_COORDINATES: CITY_COORDINATES,
+    /**
+     * 异步生成地址（优先使用 Geoapify API）
+     */
+    generateAddressAsync: async function (country, cityName) {
+      // 尝试获取城市坐标
+      const coords = CITY_COORDINATES[cityName] || CITY_COORDINATES[currentLocation?.city];
+
+      if (geoapifyApiKey && coords) {
+        try {
+          const realAddr = await fetchRealAddressFromApi(coords.lat, coords.lon);
+          if (realAddr && realAddr.address) {
+            console.log('[GeoFill] 使用 Geoapify 真实地址:', realAddr.address);
+            return realAddr;
+          }
+        } catch (e) {
+          console.log('[GeoFill] Geoapify API 失败，使用默认生成');
+        }
+      }
+
+      // 降级到默认逻辑
+      return {
+        address: generateAddress(country),
+        city: generateCity(country),
+        state: generateState(country),
+        zipCode: generateZipCode(country),
+        country: country
+      };
+    }
   };
 }

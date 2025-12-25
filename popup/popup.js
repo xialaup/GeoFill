@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Popup 主逻辑 - 获取IP信息、生成数据、与content script通信
  */
 
@@ -52,7 +52,9 @@ const elements = {
     closeHistory: null,
     historyModal: null,
     historyList: null,
-    clearHistory: null
+    clearHistory: null,
+    // Geoapify 元素
+    geoapifyKey: null
 };
 
 // 字段列表
@@ -69,8 +71,12 @@ const SETTINGS_KEY = 'geoFillSettings';
 const ARCHIVES_KEY = 'geoFillArchives';
 const AUTO_CLEAR_KEY = 'geoFillAutoClear';
 const HISTORY_KEY = 'geoFillHistory';
+const GEOAPIFY_KEY = 'geoFillGeoapifyKey';  // Geoapify API Key 独立存储
 const CACHE_VERSION = 'v3';
 const MAX_HISTORY_ITEMS = 10;
+
+// Geoapify API Key (使用 generators.js 中已声明的变量)
+// geoapifyApiKey 已在 generators.js 中声明
 
 // 默认设置
 let userSettings = {
@@ -486,6 +492,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     elements.historyModal = document.getElementById('historyModal');
     elements.historyList = document.getElementById('historyList');
     elements.clearHistory = document.getElementById('clearHistory');
+    // Geoapify 元素
+    elements.geoapifyKey = document.getElementById('geoapifyKey');
 
     try { await loadTheme(); } catch (e) { console.log('loadTheme error:', e); }
     try { await loadSettings(); } catch (e) { console.log('loadSettings error:', e); }
@@ -622,6 +630,24 @@ function bindEvents() {
             });
 
             currentData = window.generators.generateAllInfoWithSettings(ipData, userSettings);
+
+            // 如果配置了 Geoapify API Key，尝试获取真实地址
+            if (geoapifyApiKey && window.generators.generateAddressAsync && !lockedFields.has('address')) {
+                try {
+                    showToast('正在获取真实地址...');
+                    const realAddress = await window.generators.generateAddressAsync(
+                        currentData.country,
+                        currentData.city
+                    );
+                    if (realAddress && realAddress.address) {
+                        currentData.address = realAddress.address;
+                        // 注意：不更新城市/州/邮编，保持与本地生成的数据一致
+                        showToast('已获取真实地址');
+                    }
+                } catch (e) {
+                    console.log('[GeoFill] Geoapify API 调用失败:', e);
+                }
+            }
 
             // 如果选择了临时邮箱，覆盖生成的邮箱
             const domainType = elements.emailDomainType?.value;
@@ -1519,6 +1545,7 @@ function updateSettingsUI() {
     if (elements.minAge) elements.minAge.value = userSettings.minAge;
     if (elements.maxAge) elements.maxAge.value = userSettings.maxAge;
     if (elements.autoClearData) elements.autoClearData.checked = userSettings.autoClearData;
+    if (elements.geoapifyKey) elements.geoapifyKey.value = userSettings.geoapifyKey || '';
 
     // 显示/隐藏 AI 开关
     if (elements.aiToggleWrapper) {
@@ -1547,7 +1574,8 @@ async function saveSettings() {
         pwdSymbols: elements.pwdSymbols?.checked ?? true,
         minAge: parseInt(elements.minAge?.value) || 18,
         maxAge: parseInt(elements.maxAge?.value) || 55,
-        autoClearData: elements.autoClearData?.checked ?? false
+        autoClearData: elements.autoClearData?.checked ?? false,
+        geoapifyKey: elements.geoapifyKey?.value?.trim() || ''
     };
 
     try {
@@ -1555,6 +1583,10 @@ async function saveSettings() {
         await chrome.storage.local.set({ [AUTO_CLEAR_KEY]: userSettings.autoClearData });
         if (window.generators && window.generators.updateSettings) {
             window.generators.updateSettings(userSettings);
+        }
+        // 设置 Geoapify API Key 到 generators
+        if (window.generators && window.generators.setGeoapifyApiKey) {
+            window.generators.setGeoapifyApiKey(userSettings.geoapifyKey);
         }
     } catch (e) {
         console.log('保存设置失败:', e);
@@ -1574,8 +1606,49 @@ async function loadSettings() {
         if (window.generators && window.generators.updateSettings) {
             window.generators.updateSettings(userSettings);
         }
+        // 加载 Geoapify API Key (独立存储)
+        await loadGeoapifyKey();
     } catch (e) {
         console.log('加载设置失败:', e);
+    }
+}
+
+/**
+ * 加载 Geoapify API Key (独立存储)
+ */
+async function loadGeoapifyKey() {
+    try {
+        const result = await chrome.storage.local.get(GEOAPIFY_KEY);
+        geoapifyApiKey = result[GEOAPIFY_KEY] || '';
+        if (elements.geoapifyKey) {
+            elements.geoapifyKey.value = geoapifyApiKey;
+        }
+        // 同步到 generators
+        if (window.generators && window.generators.setGeoapifyApiKey) {
+            window.generators.setGeoapifyApiKey(geoapifyApiKey);
+        }
+        console.log('[GeoFill] Geoapify API Key 已加载');
+    } catch (e) {
+        console.log('加载 Geoapify API Key 失败:', e);
+    }
+}
+
+/**
+ * 保存 Geoapify API Key (独立存储，实时保存)
+ */
+async function saveGeoapifyKey() {
+    const key = elements.geoapifyKey?.value?.trim() || '';
+    geoapifyApiKey = key;
+    try {
+        await chrome.storage.local.set({ [GEOAPIFY_KEY]: key });
+        // 同步到 generators
+        if (window.generators && window.generators.setGeoapifyApiKey) {
+            window.generators.setGeoapifyApiKey(key);
+        }
+        showToast(key ? 'Geoapify API Key 已保存' : 'Geoapify API Key 已清除');
+        console.log('[GeoFill] Geoapify API Key 已保存');
+    } catch (e) {
+        console.log('保存 Geoapify API Key 失败:', e);
     }
 }
 
@@ -1742,6 +1815,12 @@ function bindSettingsEvents() {
             el.addEventListener('change', saveSettings);
         }
     });
+
+    // Geoapify API Key 独立保存 (change 和 blur 事件)
+    if (elements.geoapifyKey) {
+        elements.geoapifyKey.addEventListener('change', saveGeoapifyKey);
+        elements.geoapifyKey.addEventListener('blur', saveGeoapifyKey);
+    }
 
     // 历史记录事件
     if (elements.openHistory) {
