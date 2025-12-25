@@ -632,7 +632,8 @@ function bindEvents() {
             currentData = window.generators.generateAllInfoWithSettings(ipData, userSettings);
 
             // 尝试获取真实地址（智能切换：Geoapify → OSM → 本地）
-            if (window.generators.generateAddressAsync && !lockedFields.has('address')) {
+            const addressApiEnabled = document.getElementById('useAddressApiToggle')?.checked !== false;
+            if (addressApiEnabled && window.generators.generateAddressAsync && !lockedFields.has('address')) {
                 try {
                     showToast('正在获取真实地址...');
                     const realAddress = await window.generators.generateAddressAsync(
